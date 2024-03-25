@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "dataExtractor",
+  "version": "1.0",
+  "description": "Extension for data extraction",
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "html/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "run_at": "document_idle",
+      "all_frames": false,
+      "js": ["js/Marker.js", "js/Dataset.js", "js/MouseHandler.js", "js/Classificator.js", "js/NaiveBayes.js", "js/modal.js",
+            "js/content-script.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["css/content.css", "css/modal.css", "js/main.js", "js/popup.js",
+        "html/select-elem.html", "html/type-elem.html", "html/view-elem.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

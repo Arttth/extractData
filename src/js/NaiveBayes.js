@@ -4,9 +4,8 @@ class NaiveBayes extends Classificator {
 
     train() {
         console.log("TRAIN");
-        for (let entry of this.trainData) {
+        for (let sample of this.trainData) {
             console.log("train entry");
-            let sample = entry[1];
             // считаем частоту классов в помеченных данных
             let sampleTarget = sample.target;
             if (!this.classFreq.has(sampleTarget)) {
@@ -36,17 +35,18 @@ class NaiveBayes extends Classificator {
         }
 
         console.log("Class Freq");
-        console.log("trainDatasize = " + this.trainData.size);
+        console.log("trainDatalength = " + this.trainData.length);
         for (let entry of this.classFreq) {
-            this.classFreq.set(entry[0], entry[1]/this.trainData.size);
+            this.classFreq.set(entry[0], entry[1]/this.trainData.length);
             console.log(entry[0] + " = " + entry[1]);
         }
 
     }
 
+    // TODO: add targets in testData that classified
     classify() {
         console.log("CLASSIFY");
-        console.log("trainDatasize = " + this.trainData.size);
+        console.log("trainDatalength = " + this.trainData.length);
         let ids = [];
         let id = 0;
         for (let sample of this.testData) {

@@ -1,22 +1,22 @@
-.markedDataElem {
+[data-mark="mark_train"] {
     border: 3px solid purple;
     background-color: #a22ca2;
     opacity: 0.7;
 }
 
-.possibleMarkedDataElem {
+[data-mark="possible_mark_train"] {
     border: 3px solid green;
     background-color: #19a619;
     opacity: 0.7;
 }
 
-.possibleDelMarkedDataElem {
+[data-mark="possible_del_mark_train"] {
     border: 3px solid #b40f0f;
     background-color: red;
     opacity: 0.7;
 }
 
-.similarDataElem {
+[data-mark="mark_predict"] {
     border: 3px solid darkorange;
     background-color: orange;
     opacity: 0.7;

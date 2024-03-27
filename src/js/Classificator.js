@@ -1,9 +1,12 @@
+// интерфейс для классификатора
 class Classificator {
     targets = [];
+    dataset = {};
     constructor() {
     }
-    setTrainData(trainData) {
-        this.trainData = trainData;
+    setDataset(dataset) {
+        this.testData = dataset.testData;
+        this.trainData = dataset.trainData;
     }
 
     setTestData(testData) {

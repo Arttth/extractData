@@ -3,29 +3,78 @@ link.rel = "stylesheet";
 link.href = chrome.runtime.getURL("css/content.css");
 document.head.appendChild(link);
 
+let test = document.querySelectorAll("*");
+// chrome.runtime.sendMessage({test}, (response) => {
+//     console.log(response);
+// });
+
 let selector = new Selector();
 
 let pageClassificator = new NaiveBayes();
 let pageDataset = new Dataset();
 
 let datasets = [];
-let collectors = new Map();
+// let collectors = new Map();
+let collectors = [];
 let urls = [];
 let currentCollector = {};
 let currentClassificator = null;
 let currentDataset = null;
 
+let domain = document.location.host;
+let url = document.location.href;
 
 let rootModal = document.createElement("div");
 const shadowRoot = rootModal.attachShadow({mode: 'open'});
 document.body.appendChild(rootModal);
+
+loadStartData(domain);
+
+function loadStartData(domain) {
+    console.log("loadStartData");
+    let work = domain  + "_work";
+    console.log(work);
+    chrome.storage.local.get(work, (data) => {
+        if (data[work] === "yes") {
+            console.log("loadStartData yes");
+            console.log("LOAD DATA");
+            createViewElemWindow(shadowRoot);
+            chrome.storage.local.get(domain, (dataParams) => {
+                console.log(dataParams);
+                console.log(dataParams[domain]);
+                console.log(dataParams[domain]["pageNaiveBayesParams"]);
+                console.log(dataParams[domain]["pageNaiveBayesParams"].params);
+                pageClassificator.setParams(dataParams[domain].pageNaiveBayesParams);
+                dataParams[domain].collectorsParams.forEach((collector) => {
+                    let classificator = new NaiveBayes();
+                    classificator.setParams(collector.classificatorParams);
+                    let loadCollector = new Collector(new Dataset(), classificator);
+                    loadCollector.setType(collector.type);
+                    collectors.push(loadCollector);
+                    console.log(collector.classificatorParams.params);
+                    console.log(collector.type);
+                });
+            });
+            console.log("collectors = " + collectors);
+            console.log("pageClass = " + pageClassificator.getParams().params);
+        }
+    });
+
+}
 
 function addCollector(name, type) {
     currentCollector = new Collector(new Dataset(), new NaiveBayes());
     currentCollector.setName(name);
     currentCollector.setType(type);
     currentCollector.setURL(window.location.href);
-    if (!collectors.has(window.location.href)) {
+    let isNewUrl = true;
+    for (let collector of collectors) {
+        if (collector.url === url) {
+            isNewUrl = false;
+        }
+    }
+    if (isNewUrl) {
+        console.log("add url");
         let sample = {};
         sample.features = {};
         sample.target = window.location.href;
@@ -37,14 +86,9 @@ function addCollector(name, type) {
         sample.features.title = document.title;
         sample.features.countLinks = countLinks(document.documentElement);
         sample.features.textAmount = calculateTextAmount();
-        console.log("SITE SAMPLE = " + sample.target);
-        for (let feat in sample.features) {
-            console.log(feat);
-            console.log(sample.features[feat]);
-        }
         pageDataset.saveTrainObj(sample);
     }
-    collectors.set(window.location.href, currentCollector);
+    collectors.push(currentCollector);
 }
 
 function collectData(selector) {
@@ -60,6 +104,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.message) {
         case "start":
             createViewElemWindow(shadowRoot);
+            chrome.storage.local.set({[domain + "_work"]: "yes"}, () => {
+                console.log(domain + "_work" + " = yes");
+            });
             break;
         case "stop":
             selector.stop();
@@ -98,33 +145,37 @@ function getUseData(elem, type) {
 //     }
 // });
 
-// событие selected возникает, если элементы на странице выбраны
+// событие selected возникает, если элемент на странице выбран
 document.addEventListener("selected", (event) => {
-    console.log("selected receieve");
-    currentDataset = currentCollector.getDataset();
-    let trainData = [];
-    let testData = [];
-    selector.getSelectedElems().forEach(elem => {
-        trainData.push(transformElemToSample(elem));
-    });
-    currentDataset.setTrainData(trainData);
-    let elems = document.body.querySelectorAll("*");
-    elems.forEach(elem => {
-        testData.push(transformElemToSample(elem));
-    });
-    currentDataset.setTestData(testData);
-    let currentClassificator = currentCollector.getClassificator();
-    currentClassificator.setDataset(currentDataset);
-    currentClassificator.setTargets(currentDataset.targets);
-    currentClassificator.train();
-    let predict_elems = [];
-    let predict_ind = currentClassificator.classify();
-    console.log(predict_ind);
-    predict_ind.forEach((ind) => {
-        predict_elems.push(elems[ind]);
-        console.log(elems[ind].tagName);
-    });
-    selector.markPredictElems(predict_elems);
+    let selectedElems = selector.getSelectedElems();
+    if (selectedElems.length > 1) {
+        currentDataset = currentCollector.getDataset();
+        let allElems = document.body.querySelectorAll("*");
+        let trainData = transformElemsToSample(selectedElems);
+        let testData = transformElemsToSample(allElems);
+        currentDataset.setData(trainData, testData);
+        let currentClassificator = currentCollector.getClassificator();
+        currentClassificator.setDataset(currentDataset);
+        // TODO: возможно перенести таргеты из датасета в основной скрипт
+        currentClassificator.setTargets(currentDataset.targets);
+        currentClassificator.train();
+        // TODO:
+        // currentClassificator.classify();
+        // testData.forEach((sample, index) => {
+        //     if (sample.target === "yes") {
+        //         console.log("yes");
+        //         predict_elems.push(allElems[index]);
+        //     }
+        // });
+        let predict_elems = [];
+        let predict_ind = currentClassificator.classify();
+        console.log(predict_ind);
+        predict_ind.forEach((ind) => {
+            predict_elems.push(allElems[ind]);
+            console.log(allElems[ind].tagName);
+        });
+        selector.markPredictElems(predict_elems);
+    }
 });
 
 
@@ -145,6 +196,13 @@ function transformElemToSample(elem) {
     return sample
 }
 
+function transformElemsToSample(elems) {
+    let samples = [];
+    elems.forEach((elem) => {
+        samples.push(transformElemToSample(elem));
+    });
+    return samples;
+}
 function nameClass(element) {
     let countClass = 2;
     let result = [];

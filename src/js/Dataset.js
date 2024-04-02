@@ -14,6 +14,11 @@ class Dataset {
         this.targets = targets;
     }
 
+    setData(trainData, testData) {
+        this.trainData = trainData;
+        this.testData = testData;
+    }
+
     setTrainData(trainData) {
         this.trainData = trainData;
     }

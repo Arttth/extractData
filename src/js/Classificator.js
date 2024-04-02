@@ -5,8 +5,9 @@ class Classificator {
     constructor() {
     }
     setDataset(dataset) {
-        this.testData = dataset.testData;
-        this.trainData = dataset.trainData;
+        // this.testData = dataset.testData;
+        // this.trainData = dataset.trainData;
+        this.dataset = dataset;
     }
 
     setTestData(testData) {
@@ -16,6 +17,7 @@ class Classificator {
     setTargets(targets) {
         this.targets = targets;
     }
+    getParams() {}
     train() {}
     classify() {}
     loadTrainData() {}

@@ -4,7 +4,7 @@ class NaiveBayes extends Classificator {
 
     train() {
         console.log("TRAIN");
-        for (let sample of this.trainData) {
+        for (let sample of this.dataset.trainData) {
             console.log("train entry");
             // считаем частоту классов в помеченных данных
             let sampleTarget = sample.target;
@@ -35,9 +35,9 @@ class NaiveBayes extends Classificator {
         }
 
         console.log("Class Freq");
-        console.log("trainDatalength = " + this.trainData.length);
+        console.log("trainDatalength = " + this.dataset.trainData.length);
         for (let entry of this.classFreq) {
-            this.classFreq.set(entry[0], entry[1]/this.trainData.length);
+            this.classFreq.set(entry[0], entry[1]/this.dataset.trainData.length);
             console.log(entry[0] + " = " + entry[1]);
         }
 
@@ -46,12 +46,12 @@ class NaiveBayes extends Classificator {
     // TODO: add targets in testData that classified
     classify() {
         console.log("CLASSIFY");
-        console.log("trainDatalength = " + this.trainData.length);
+        console.log("trainDatalength = " + this.dataset.trainData.length);
         let ids = [];
         let id = 0;
-        for (let sample of this.testData) {
+        for (let sample of this.dataset.testData) {
             let targetProb = [];
-            for (let target of this.targets) {
+            for (let target of this.dataset.targets) {
                 let prob = this.classFreq.get(target);
                 let feats = sample.features;
                 for (let featureName in feats) {
@@ -77,5 +77,35 @@ class NaiveBayes extends Classificator {
             id++;
         }
         return ids;
+    }
+
+
+    getFeatureFreq() {
+        return this.featureFreq;
+    }
+
+    getClassFreq() {
+        return this.classFreq;
+    }
+
+    getObjFeatureFreq() {
+        return Object.fromEntries(this.featureFreq);
+    }
+
+    getObjClassFreq() {
+        return Object.fromEntries(this.classFreq);
+    }
+
+    getParams() {
+        return {
+            'params':
+                {"featureFreq": Object.fromEntries(this.featureFreq),
+                    'classFreq': Object.fromEntries(this.classFreq)}
+        };
+    }
+
+    setParams(params) {
+        this.featureFreq = new Map(Object.entries(params.params.featureFreq));
+        this.classFreq = new Map(Object.entries(params.params.classFreq));
     }
 }

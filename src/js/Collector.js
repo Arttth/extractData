@@ -7,7 +7,6 @@ class Collector {
     constructor(dataset, classificator) {
         this.dataset = dataset;
         this.classificator = classificator;
-
     }
 
     setName(name) {
@@ -36,5 +35,9 @@ class Collector {
 
     getClassificator() {
         return this.classificator;
+    }
+
+    getPredictedElems() {
+
     }
 }

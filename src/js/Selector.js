@@ -20,7 +20,6 @@ class Selector {
     }
 
     markPredictElems(elems) {
-        console.log("mark predict");
         if (elems) {
             elems.forEach(elem => {
                elem.dataset.mark = this.mark_predict;
@@ -44,11 +43,11 @@ class Selector {
     }
 
     mouseclickFunc(event) {
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        event.preventDefault();
         let elem = event.target;
-        if (elem && this.illegalTags.indexOf(elem.tagName)) {
+        if (elem && this.illegalTags.indexOf(elem.tagName) && !elem.classList.contains("modal")) {
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            event.preventDefault();
             if (elem.dataset.mark === this.mark_train) {
                 delete elem.dataset.mark;
                 // TODO: удаление
@@ -62,10 +61,8 @@ class Selector {
                 // this.dataset.saveTrainElem(elem, name);
                 // elem.dataset.nameid = name;
             }
-        }
-        if (this.selectedElems.length > 2) {
+            // TODO: может быть добавить сообщение о том удалился или добавился элменты (мб передавать кол-во вбыранных)
             document.dispatchEvent(new CustomEvent("selected", {}));
-            this.stop();
         }
     }
 
@@ -91,6 +88,6 @@ class Selector {
         document.body.removeEventListener("mouseover", this.mouseoverBind, true);
         document.body.removeEventListener('click', this.mouseclickBind, true);
         document.body.removeEventListener('mouseout', this.mouseoutBind, true);
-        // marker.clearMarks();
+        this.clearMarks();
     }
 }

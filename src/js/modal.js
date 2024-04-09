@@ -11,11 +11,23 @@ function createModal(html_src, css_src, shadowRoot) {
         });
 }
 
+function createOrChooseExtractor(shadowRoot) {
+    createModal("html/select-extractor.html", 'css/modal.css', shadowRoot)
+        .then(root => {
+            const selectExtractorBtn = root.querySelector("#select_extractor_btn");
+            const extractor = root.querySelector("#extractor_name");
+            selectExtractorBtn.addEventListener("click", () => {
+                if (extractor.value.length) {
+                    saveExtractor({'extractorName': extractor.value});
+                    createViewElemWindow(shadowRoot);
+                }
+            });
+        });
+}
+
 function createViewElemWindow(shadowRoot) {
     createModal("html/view-elem.html", 'css/modal.css', shadowRoot)
         .then(root => {
-            let extractTreeName;
-            chrome.storage.local.get([domain ])
             const createElemBtn = root.querySelector("#create_elem");
             createElemBtn.addEventListener("click", () => {
                 createSelectAttrWindow(shadowRoot);
@@ -24,10 +36,10 @@ function createViewElemWindow(shadowRoot) {
             // сохранение в формате CSV
             const endBtn = root.querySelector("#end_btn");
             endBtn.addEventListener("click", (event) => {
-                saveToCSV();
                 chrome.storage.local.set({[domain + "_work"]: "no"}, () => {
                     //
                 });
+                saveToCSV();
             });
         });
 }
@@ -37,24 +49,13 @@ function createSelectElemWindow(shadowRoot) {
         .then(root => {
             const selectElemBtn = root.querySelector("#select_elem");
             selectElemBtn.addEventListener("click", () => {
-                let domainData = {};
-                domainData['pageNaiveBayesParams'] = pageClassificator.getParams();
-                let collectorParams = [];
-                for (let collector of collectors) {
-                    let params = {};
-                    params['type'] = collector.type;
-                    params['classificatorParams'] = collector.getClassificator().getParams();
-                    collectorParams.push(params);
-                }
+                let collector = {};
+                collector['collectorName'] = currentCollector.name;
+                collector['collectorType'] = currentCollector.type;
+                collector['collectorClassificator'] = currentCollector.getClassificator().getParams();
+                collector['collectorURL'] = currentCollector.url;
+                saveCollector(collector);
 
-                domainData['collectorsParams'] = collectorParams;
-                chrome.storage.local.set({[domain]: domainData}, () => {
-                    console.log("collectors saved");
-                });
-                console.log("domain data");
-                chrome.storage.local.get(domain, (data) => {
-                    console.log(data);
-                });
                 selector.stop();
                 createViewElemWindow(shadowRoot);
             });

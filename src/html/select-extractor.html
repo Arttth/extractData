@@ -1,0 +1,21 @@
+<div id="modal" class="modal">
+    <div class="modal_header">
+        <a href="#" class="modal_close">X</a>
+        <div class="modal_title">Выбор элементов</div>
+    </div>
+    <div class="modal_content">
+        <div class="modal_text">Выберите или создайте экстрактор</div>
+        <form class="modal_form">
+            <label for="extractor_name">Имя сборщика</label><br>
+            <input type="text" id="extractor_name"><br>
+            <div class="modal_text">или</div>
+            <label for="elem_type">Выбор существующего</label><br>
+            <select  id="elem_type">
+                <option value="link">Link</option>
+                <option value="text">Text</option>
+                <option value="img">Image</option>
+            </select><br>
+            <button id="select_extractor_btn" class="modal_button" type="button">Продолжить</button>
+        </form>
+    </div>
+</div>

@@ -1,8 +1,18 @@
 class ChromeLocal extends Storage {
-    saveData() {
+    saveCollector(domain, name, collector) {
+        chrome.storage.local.set({[domain+"_"+name+"_collector"]: collector}, () => {
 
-    };
-    removeData() {};
-    getData() {};
-    updateData() {};
+        });
+    }
+
+    updateCollector() {
+
+    }
+    deleteCollector() {
+
+    }
+
+    getCollector() {
+
+    }
 }

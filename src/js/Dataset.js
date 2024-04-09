@@ -4,11 +4,9 @@ class Dataset {
     targets = ["yes", "no"];
     features = [];
 
-    // TODO: maybe delete
-    //predictedData = [];
-
     constructor() {
     }
+
 
     setTargets(targets) {
         this.targets = targets;

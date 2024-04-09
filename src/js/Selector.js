@@ -12,6 +12,13 @@ class Selector {
     mouseoutBind = this.mouseoutFunc.bind(this);
     mouseclickBind = this.mouseclickFunc.bind(this);
 
+    initStyles(styleSrc) {
+        let link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = chrome.runtime.getURL(styleSrc);
+        document.head.appendChild(link);
+    }
+
     clearMarks() {
         this.selectedElems.forEach(elem => {
             delete elem.dataset.mark;
@@ -19,10 +26,21 @@ class Selector {
         this.selectedElems = [];
     }
 
+    clearElems(elems) {
+        elems.forEach(elem => {
+            delete elem.dataset.mark;
+        });
+    }
+
     markPredictElems(elems) {
+        console.log(elems);
         if (elems) {
             elems.forEach(elem => {
-               elem.dataset.mark = this.mark_predict;
+                if (elem.dataset.mark !== this.mark_train) {
+                    elem.dataset.mark = this.mark_predict;
+                } else {
+                    console.log("ELSE");
+                }
             });
         }
     }
@@ -51,7 +69,7 @@ class Selector {
             if (elem.dataset.mark === this.mark_train) {
                 delete elem.dataset.mark;
                 // TODO: удаление
-                this.selectedElems.pop(elem);
+                this.selectedElems.splice(this.selectedElems.indexOf(elem));
                 // let name = elem.dataset.nameid;
                 // this.dataset.removeTrainElem(name);
             } else {

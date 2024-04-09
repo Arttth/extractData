@@ -1,25 +1,14 @@
-let link = document.createElement("link");
-link.rel = "stylesheet";
-link.href = chrome.runtime.getURL("css/content.css");
-document.head.appendChild(link);
-
-let test = document.querySelectorAll("*");
-// chrome.runtime.sendMessage({test}, (response) => {
-//     console.log(response);
-// });
-
 let selector = new Selector();
+selector.initStyles("css/content.css");
 
 let pageClassificator = new NaiveBayes();
 let pageDataset = new Dataset();
 
-let datasets = [];
-// let collectors = new Map();
+
 let collectors = [];
-let urls = [];
 let currentCollector = {};
-let currentClassificator = null;
 let currentDataset = null;
+let currentPredictedElems = [];
 
 let domain = document.location.host;
 let url = document.location.href;
@@ -30,6 +19,9 @@ document.body.appendChild(rootModal);
 
 loadStartData(domain);
 
+// starturl
+
+
 function loadStartData(domain) {
     console.log("loadStartData");
     let work = domain  + "_work";
@@ -38,7 +30,7 @@ function loadStartData(domain) {
         if (data[work] === "yes") {
             console.log("loadStartData yes");
             console.log("LOAD DATA");
-            createViewElemWindow(shadowRoot);
+            createOrChooseExtractor(shadowRoot);
             chrome.storage.local.get(domain, (dataParams) => {
                 console.log(dataParams);
                 console.log(dataParams[domain]);
@@ -59,7 +51,6 @@ function loadStartData(domain) {
             console.log("pageClass = " + pageClassificator.getParams().params);
         }
     });
-
 }
 
 function addCollector(name, type) {
@@ -74,7 +65,6 @@ function addCollector(name, type) {
         }
     }
     if (isNewUrl) {
-        console.log("add url");
         let sample = {};
         sample.features = {};
         sample.target = window.location.href;
@@ -87,6 +77,7 @@ function addCollector(name, type) {
         sample.features.countLinks = countLinks(document.documentElement);
         sample.features.textAmount = calculateTextAmount();
         pageDataset.saveTrainObj(sample);
+
     }
     collectors.push(currentCollector);
 }
@@ -125,31 +116,12 @@ function getUseData(elem, type) {
     }
 }
 
-// document.addEventListener("datasetsave", (event) => {
-//     console.log("datasetsave event");
-//     console.log("size:" + currentDataset.getTrainDatasetSize());
-//     if (currentDataset.getTrainDatasetSize() > 2) {
-//            currentDataset.getClassificator().train();
-//         let elems = document.body.querySelectorAll("*");
-//         currentDataset.saveTestElems(elems)
-//         let ids = currentDataset.getClassificator().classify();
-//         let type = currentDataset.getDatasetType();
-//         console.log("Predicted data: ");
-//         let predictedData = [];
-//         for (let id of ids) {
-//             elems[id].classList.add("similarDataElem");
-//             predictedData.push(getUseData(elems[id], type));
-//         }
-//         currentDataset.setPredictedData(predictedData);
-//         // переместить в другое место
-//     }
-// });
-
 // событие selected возникает, если элемент на странице выбран
 document.addEventListener("selected", (event) => {
     let selectedElems = selector.getSelectedElems();
     if (selectedElems.length > 1) {
         currentDataset = currentCollector.getDataset();
+        selector.clearElems(currentPredictedElems);
         let allElems = document.body.querySelectorAll("*");
         let trainData = transformElemsToSample(selectedElems);
         let testData = transformElemsToSample(allElems);
@@ -175,6 +147,7 @@ document.addEventListener("selected", (event) => {
             console.log(allElems[ind].tagName);
         });
         selector.markPredictElems(predict_elems);
+        currentPredictedElems = predict_elems;
     }
 });
 

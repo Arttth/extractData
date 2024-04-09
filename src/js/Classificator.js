@@ -17,7 +17,7 @@ class Classificator {
     setTargets(targets) {
         this.targets = targets;
     }
-    getParams() {}
+    // getParams() {}
     train() {}
     classify() {}
     loadTrainData() {}

@@ -1,6 +1,8 @@
+// TODO: сохранять все помеченные элементы
 class Selector {
     constructor() {
         this.selectedElems = [];
+        this.predictedElems = [];
         this.illegalTags = ["DIV", "FORM"];
         this.mark_train = "mark_train";
         this.possible_mark_train = "possible_mark_train";
@@ -12,24 +14,24 @@ class Selector {
     mouseoutBind = this.mouseoutFunc.bind(this);
     mouseclickBind = this.mouseclickFunc.bind(this);
 
-    initStyles(styleSrc) {
-        let link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = chrome.runtime.getURL(styleSrc);
-        document.head.appendChild(link);
-    }
 
-    clearMarks() {
+    clearSelectedElems() {
         this.selectedElems.forEach(elem => {
             delete elem.dataset.mark;
         });
         this.selectedElems = [];
     }
 
-    clearElems(elems) {
-        elems.forEach(elem => {
+    clearPredictedElems() {
+        this.predictedElems.forEach(elem => {
             delete elem.dataset.mark;
-        });
+        })
+        this.predictedElems = [];
+    }
+
+    clearElems() {
+        this.clearSelectedElems();
+        this.clearPredictedElems();
     }
 
     markPredictElems(elems) {
@@ -38,6 +40,7 @@ class Selector {
             elems.forEach(elem => {
                 if (elem.dataset.mark !== this.mark_train) {
                     elem.dataset.mark = this.mark_predict;
+                    this.predictedElems.push(elem);
                 } else {
                     console.log("ELSE");
                 }
@@ -66,13 +69,15 @@ class Selector {
             event.stopPropagation();
             event.stopImmediatePropagation();
             event.preventDefault();
-            if (elem.dataset.mark === this.mark_train) {
+            if (elem.dataset.mark === this.possible_del_mark_train) {
                 delete elem.dataset.mark;
-                // TODO: удаление
                 this.selectedElems.splice(this.selectedElems.indexOf(elem));
-                // let name = elem.dataset.nameid;
-                // this.dataset.removeTrainElem(name);
+            } else if (elem.dataset.mark === this.mark_predict) {
+                this.predictedElems.splice(this.predictedElems.indexOf(elem));
+                elem.dataset.mark = this.mark_train;
+                this.selectedElems.push(elem);
             } else {
+                console.log("MARK ELEMENT_____");
                 elem.dataset.mark = this.mark_train;
                 this.selectedElems.push(elem);
                 // let name = this.dataset.getDatasetName() + Math.random();
@@ -106,6 +111,6 @@ class Selector {
         document.body.removeEventListener("mouseover", this.mouseoverBind, true);
         document.body.removeEventListener('click', this.mouseclickBind, true);
         document.body.removeEventListener('mouseout', this.mouseoutBind, true);
-        this.clearMarks();
+        this.clearElems();
     }
 }

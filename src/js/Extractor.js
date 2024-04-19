@@ -1,23 +1,26 @@
-function saveToCSV(collectors) {
+function saveToCSV(useData) {
+    console.log(useData);
     let str = "";
-    for (let i = 0; i < datasets.length; ++i) {
-        str += datasets[i].getDatasetName() + ";";
-        str += collectors[i].getName();
+    for (let i = 0; i < useData.length; ++i) {
+        str += useData[i].name + ";";
     }
     str += "\n";
-    for (let i = 0; i < collectors[0].getDataset().predictedData.length; ++i) {
-        for (let j = 0; j < datasets.length; ++j) {
-            str += datasets[j].predictedData[i] + ";";
+    for (let i = 0; i < useData[0].data.length; ++i) {
+        for (let j = 0; j < useData.length; ++j) {
+            str += useData[j].data[i] + ";";
         }
         str += "\n";
     }
-    let data = new Blob([str], {type: 'text/csv;charset=UTF-8'});
-    let link = document.createElement("a");
-    link.href = URL.createObjectURL(data);
-    link.click();
-    URL.revokeObjectURL(link.href);
-    link.remove();
+
+    return str;
+    // let data = new Blob([str], {type: 'text/csv;charset=UTF-8'});
+    // let link = document.createElement("a");
+    // link.href = URL.createObjectURL(data);
+    // link.click();
+    // URL.revokeObjectURL(link.href);
+    // link.remove();
 }
+
 
 function saveToEXCEL(collectors) {
 

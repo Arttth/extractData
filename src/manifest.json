@@ -15,7 +15,7 @@
       "matches": ["<all_urls>"],
       "run_at": "document_idle",
       "all_frames": false,
-      "js": ["js/Marker.js", "js/Storage.js", "js/Dataset.js", "js/Selector.js", "js/Collector.js", "js/Extractor.js","js/Classificator.js", "js/NaiveBayes.js", "js/modal.js",
+      "js": ["js/Marker.js", "js/Storage.js", "js/features.js", "js/Dataset.js", "js/Selector.js", "js/Collector.js", "js/Extractor.js","js/Classificator.js", "js/NaiveBayes.js", "js/modal.js",
             "js/content-script.js"]
     }
   ],
@@ -24,8 +24,15 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["css/content.css", "css/modal.css", "js/main.js", "js/popup.js",
-        "html/select-elem.html", "html/type-elem.html", "html/view-elem.html", "html/select-extractor.html"],
+      "resources": ["css/content.css",
+        "css/modal.css",
+        "js/popup.js",
+        "html/select-elem.html",
+        "html/type-elem.html",
+        "html/view-elem.html",
+        "html/create-extractor.html",
+        "html/select-extractor.html"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

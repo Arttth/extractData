@@ -7,6 +7,7 @@ class Collector {
     constructor(dataset, classificator) {
         this.dataset = dataset;
         this.classificator = classificator;
+        this.classificator.setDataset(this.dataset);
     }
 
     setName(name) {

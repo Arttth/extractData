@@ -13,12 +13,7 @@ function saveToCSV(useData) {
     }
 
     return str;
-    // let data = new Blob([str], {type: 'text/csv;charset=UTF-8'});
-    // let link = document.createElement("a");
-    // link.href = URL.createObjectURL(data);
-    // link.click();
-    // URL.revokeObjectURL(link.href);
-    // link.remove();
+
 }
 
 

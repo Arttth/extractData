@@ -10,12 +10,14 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    border-radius: 10px;
 }
 
 .modal_content {
     color: black;
     min-height: 100%;
     background-color: gray;
+    padding: 10px;
 }
 
 .modal_header {
@@ -23,7 +25,7 @@
     height: 15px;
     background-color: darkorange;
     padding: 5px;
-    font-size: 15px;
+    font-size: 25px;
 }
 
 .modal_close {
@@ -42,12 +44,18 @@
     position: absolute;
     left: 0;
     top: 0;
-    font-size: 10px;
+    font-size: 15px;
     margin: 0px 0px 1em 0px;
 }
 
 .modal_button {
-    padding: 5px 5px;
+    padding: 10px 10px;
+    border: none;
     border-radius: 10px;
     background-color: darkorange;
+    text-transform: uppercase;
+}
+
+.modal_button:hover {
+    background-color: #e77e06;
 }

@@ -85,11 +85,23 @@ function createViewElemWindow(shadowRoot) {
                     //
                 });
                 // saveToCSV();
-                chrome.runtime.sendMessage({message: "extract" }, response => {
+                chrome.runtime.sendMessage({message: "extract"}, response => {
                     console.log(response);
                 });
             });
+            root.append(showTree(collectors));
+            document.body.append(showTree(collectors));
         });
+}
+
+function showTree(collectors) {
+    let div = document.createElement("div");
+    let link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/treeflex/dist/css/treeflex.css";
+    div.appendChild(link);
+    div.innerHTML = "";
+    return div;
 }
 
 function createSelectElemWindow(shadowRoot) {
@@ -118,11 +130,21 @@ function createSelectElemWindow(shadowRoot) {
                 selector.stop();
                 createSelectAttrWindow(shadowRoot);
             });
+
+            let div = document.createElement("div");
+            root.querySelector(".modal_content").append(div);
+            div.innerHTML = "Количество предсказанных элементов: " + 0;
+            div.offsetWidth = 100;
+            div.offsetHeight = 100;
+            div.id = "myDiv";
+            document.body.addEventListener("click", () => {
+                console.log("click" + currentPredictedElems.length);
+                div.innerHTML = "Количество предсказанных элементов: " + currentPredictedElems.length;
+            });
         });
 }
 
 function createSelectAttrWindow(shadowRoot) {
-    console.log("collector size = " + collectors.size);
     createModal("html/type-elem.html", 'css/modal.css', shadowRoot)
         .then(root => {
             const typeElemBtn = root.querySelector("#type_btn");

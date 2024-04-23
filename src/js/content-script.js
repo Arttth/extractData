@@ -99,20 +99,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 pageDataset.setData(message.pageSamples, testData);
                 pageClassificator.setDataset(pageDataset);
                 pageClassificator.train();
-                pageClassificator.classifyWithMax(0.01);
-                console.log(testData);
-                console.log(message.collectors);
+                pageClassificator.classifyWithMax(0.001);
                 if (testData[0].target !== '-') {
-                    let collectors = [];
+                    let suitCollectors = [];
                     for (let i = 0; i < message.collectors.length; ++i) {
                         if (testData[0].target === message.collectors[i].collectorURL) {
-                            collectors.push(message.collectors[i]);
+                            suitCollectors.push(message.collectors[i]);
                         }
                     }
-                    let useData = getUseDataFromCollectors(collectors);
-                    sendResponse({message: "ok", useData: useData});
+                    if (suitCollectors.length > 0) {
+                        let useData = getUseDataFromCollectors(suitCollectors);
+                        sendResponse({message: "ok", useData: useData});
+                    } else {
+                        sendResponse({message: "not"});
+                    }
+
                 } else {
-                    //
+                    let isMark = confirm("Страница не похожа на размеченные. Начать рамечать страницу?");
+                    if (isMark) {
+                        createSelectAttrWindow(shadowRoot);
+                        alert("Разметка");
+                    } else {
+                        alert("Не разметка");
+                    }
                     sendResponse({message: "200"});
                 }
 
@@ -133,18 +142,14 @@ function getUseDataFromCollectors(collectors) {
         newCollector.getDataset().setTargets(["yes", "no"]);
         let predict_elems = [];
         let predict_ind = newCollector.getClassificator().classify();
-        console.log(predict_ind);
         predict_ind.forEach((ind) => {
             predict_elems.push(allElems[ind]);
         });
-        // let selector = new Selector();
-        // selector.markPredictElems(predict_elems);
         let data = [];
         for (let i = 0; i < predict_elems.length; ++i) {
             data.push(getUseData(predict_elems[i], collectorDB.collectorType));
         }
-        console.log(data);
-        useData.push({name: collectorDB.collectorName, data:data});
+        useData.push({name: collectorDB.collectorName, type: collectorDB.collectorType, data:data});
     }
     return useData;
 }
@@ -154,7 +159,14 @@ function getUseData(elem, type) {
         case "text":
             return elem.innerText;
         case "link":
-            return elem.querySelector("a").href;
+            if (elem.tagName === 'A') {
+                return elem.href;
+            } else if (elem.querySelector("a"))  {
+                return elem.querySelector("a").href;
+            } else {
+                alert("Несоответствие типов, не может быть извлечен link");
+                return elem.innerText;
+            }
         case "img":
             return elem.src;
     }
@@ -163,32 +175,31 @@ function getUseData(elem, type) {
 // событие selected возникает, если элемент на странице выбран
 document.addEventListener("selected", (event) => {
     let selectedElems = selector.getSelectedElems();
-    if (selectedElems.length > 1) {
-        currentDataset = currentCollector.getDataset();
-        selector.clearPredictedElems();
-        let allElems = document.body.querySelectorAll("*");
-        let trainData = transformElemsToSample(selectedElems);
-        let testData = transformElemsToSample(allElems);
-        currentDataset.setData(trainData, testData);
-        currentDataset.setTargets(["yes", "no"]);
-        let currentClassificator = currentCollector.getClassificator();
-        // TODO: возможно перенести таргеты из датасета в основной скрипт
-        currentClassificator.train();
-        // TODO:
-        // currentClassificator.classify();
-        // testData.forEach((sample, index) => {
-        //     if (sample.target === "yes") {
-        //         console.log("yes");
-        //         predict_elems.push(allElems[index]);
-        //     }
-        // });
-        let predict_elems = [];
-        let predict_ind = currentClassificator.classify();
-        console.log(predict_ind);
-        predict_ind.forEach((ind) => {
-            predict_elems.push(allElems[ind]);
-        });
-        selector.markPredictElems(predict_elems);
-        currentPredictedElems = predict_elems;
-    }
+    currentDataset = currentCollector.getDataset();
+    selector.clearPredictedElems();
+    let allElems = document.body.querySelectorAll("*");
+    let trainData = transformElemsToSample(selectedElems);
+    let testData = transformElemsToSample(allElems);
+    currentDataset.setData(trainData, testData);
+    currentDataset.setTargets(["yes", "no"]);
+    let currentClassificator = currentCollector.getClassificator();
+    // TODO: возможно перенести таргеты из датасета в основной скрипт
+    currentClassificator.train();
+    // TODO:
+    // currentClassificator.classify();
+    // testData.forEach((sample, index) => {
+    //     if (sample.target === "yes") {
+    //         console.log("yes");
+    //         predict_elems.push(allElems[index]);
+    //     }
+    // });
+    let predict_elems = [];
+    let predict_ind = currentClassificator.classify();
+    console.log(predict_ind);
+    predict_ind.forEach((ind) => {
+        predict_elems.push(allElems[ind]);
+    });
+    selector.markPredictElems(predict_elems);
+    currentPredictedElems = predict_elems;
+
 });

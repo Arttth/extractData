@@ -67,7 +67,7 @@ class NaiveBayes extends Classificator {
                 targetProb.push(prob);
             }
             for (let j = 0; j < this.dataset.targets.length; ++j) {
-                if (targetProb[j] > 0.01) {
+                if (targetProb[j] > 0.1) {
                     this.dataset.testData[i].target = this.dataset.targets[j];
                     ids.push(id);
                     console.log(targetProb[j]);
@@ -111,6 +111,7 @@ class NaiveBayes extends Classificator {
                     console.log("Условная вер-ть = " + uslProb);
                     prob *= uslProb;
                 }
+                console.log("ВЕРОЯТНОСТЬ = " + prob);
                 // console.log("PROBALITY = " + prob);
                 targetProb.push(prob);
             }

@@ -2,8 +2,7 @@ class NaiveBayes extends Classificator {
     classFreq = new Map();
     featureFreq = new Map();
 
-    train() {
-        this.clearParams();
+    fit() {
         for (let sample of this.dataset.trainData) {
             // считаем частоту классов в помеченных данных
             let sampleTarget = sample.target;
@@ -15,68 +14,91 @@ class NaiveBayes extends Classificator {
             // подсчет частоты признаков при опредленном классе в объекте
             let feats = sample.features;
             for (let featureName in feats) {
-                const key = JSON.stringify([featureName, feats[featureName], sampleTarget]);
+                const key = this._createKey(featureName, feats[featureName], sampleTarget);
                 if (!this.featureFreq.has(key)) {
                     this.featureFreq.set(key, 0);
                 }
                 this.featureFreq.set(key, this.featureFreq.get(key)+1);
             }
         }
-
-        console.log("Feature Freq");
-        for (let entry of this.featureFreq) {
-            this.featureFreq.set(entry[0], entry[1]/this.classFreq.get(JSON.parse(entry[0])[2]));
-            console.log("classFreq = " + this.classFreq.get(JSON.parse(entry[0])[2]));
-            console.log(entry[0] + " = " + entry[1]);
-        }
-
-        console.log("Class Freq");
-        console.log("trainDatalength = " + this.dataset.trainData.length);
-        for (let entry of this.classFreq) {
-            this.classFreq.set(entry[0], entry[1]/this.dataset.trainData.length);
-            console.log(entry[0] + " = " + entry[1]);
-        }
-
     }
 
-    // TODO: add targets in testData that classified
-    // TODO: может переписать на classifyWithSelect
-    classify() {
-        console.log("CLASSIFY");
+    trainWithReset() {
+        this.clearParams();
+        this.fit();
+
+        // console.log("Feature Freq");
+        // for (let entry of this.featureFreq) {
+        //     this.featureFreq.set(entry[0], entry[1]/this.classFreq.get(JSON.parse(entry[0])[2]));
+        //     console.log("classFreq = " + this.classFreq.get(JSON.parse(entry[0])[2]));
+        //     console.log(entry[0] + " = " + entry[1]);
+        // }
+        //
+        // console.log("Class Freq");
         // console.log("trainDatalength = " + this.dataset.trainData.length);
-        // console.log("trainData = " + this.classFreq);
-        // console.log("trainData = " + this.featureFreq);
+        // for (let entry of this.classFreq) {
+        //     this.classFreq.set(entry[0], entry[1]/this.dataset.trainData.length);
+        //     console.log(entry[0] + " = " + entry[1]);
+        // }
+    }
+
+
+
+    mapSum(map) {
+        let sum = 0;
+        for (let entry of map.values()) {
+            sum += entry;
+        }
+        return sum;
+    }
+
+    _createKey(featureName, featureValue, target) {
+        return JSON.stringify({featureName, featureValue, target});
+    }
+
+    calculateProbabilities(features) {
+        let probabilities = [];
+        let trainDataLength = this.mapSum(this.classFreq);
+
+        for (let target of this.dataset.targets) {
+            let logProb = Math.log(this.classFreq.get(target) / trainDataLength || 0.01);
+
+            for (let featureName in features) {
+                const key = this._createKey(featureName, features[featureName], target);
+                let featureFreqVal = this.featureFreq.has(key) ? this.featureFreq.get(key) : 0;
+                let featureProbability = (featureFreqVal + 1) / (this.classFreq.get(target) + this.classFreq.size);
+                logProb += Math.log(featureProbability);
+            }
+            probabilities.push(Math.exp(logProb));
+        }
+
+        for (let j = 0; j < probabilities.length; ) {
+            if (probabilities[j] !== probabilities[j]) {
+                probabilities.splice(j, j);
+                break;
+            }
+            ++j;
+        }
+        return probabilities;
+    }
+
+    predict(threshold = 0.1) {
+        console.log("CLASSIFY");
         let ids = [];
         let id = 0;
-        for (let i = 0; i < this.dataset.testData.length; ++i) {
-            let targetProb = [];
-            for (let target of this.dataset.targets) {
-                let prob = this.classFreq.get(target) || 0.01;
-                let feats = this.dataset.testData[i].features;
-                for (let featureName in feats) {
-                    const key = JSON.stringify([featureName, feats[featureName], target]);
-                    let uslProb;
-                    if (!this.featureFreq.has(key)) {
-                        uslProb = 0.1;
-                    } else {
-                        uslProb = this.featureFreq.get(key);
-                    }
-                    prob *= uslProb;
-                }
-                // console.log("PROBALITY = " + prob);
-                targetProb.push(prob);
-            }
-            for (let j = 0; j < this.dataset.targets.length; ++j) {
-                if (targetProb[j] > 0.1) {
-                    this.dataset.testData[i].target = this.dataset.targets[j];
-                    ids.push(id);
-                    console.log(targetProb[j]);
-                } else {
-                    this.dataset.testData[i].target = "-";
-                }
-            }
 
-            this.dataset.testData[i].target = this.dataset.targets[targetProb.indexOf(Math.min(...targetProb))];
+        for (let i = 0; i < this.dataset.testData.length; ++i) {
+            let targetProb = this.calculateProbabilities(this.dataset.testData[i].features);
+
+            let maxProb = Math.max(...targetProb);
+            let maxIndex = targetProb.indexOf(maxProb);
+
+            if (maxProb > threshold) {
+                this.dataset.testData[i].target = this.dataset.targets[maxIndex];
+                ids.push(id);
+            } else {
+                this.dataset.testData[i].target = "-";
+            }
             id++;
         }
         console.log(this.dataset.testData);
@@ -94,12 +116,15 @@ class NaiveBayes extends Classificator {
         let ids = [];
         let id = 0;
         for (let i = 0; i < this.dataset.testData.length; ++i) {
+            if (i === 1178) {
+                console.log(this.dataset);
+            }
             let targetProb = [];
             for (let target of this.dataset.targets) {
                 let prob = this.classFreq.get(target);
                 let feats = this.dataset.testData[i].features;
                 for (let featureName in feats) {
-                    const key = JSON.stringify([featureName, feats[featureName], target]);
+                    const key = this._createKey(featureName, feats[featureName], target);
                     console.log("KEY = " + key);
                     let uslProb;
                     if (!this.featureFreq.has(key)) {
@@ -140,6 +165,7 @@ class NaiveBayes extends Classificator {
            }
         });
     }
+
 
     getFeatureFreq() {
         return this.featureFreq;

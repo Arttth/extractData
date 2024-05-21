@@ -1,16 +1,18 @@
 <div id="modal" class="modal">
     <div class="modal_header">
         <a href="#" class="modal_close">X</a>
-        <div class="modal_title">Создать экстрактор</div>
+        <div class="modal_title">Создать разметку сайта</div>
     </div>
     <div class="modal_content">
-        <div class="modal_text">Введите название экстрактора</div>
+        <div class="modal_hint">
+            <span class="modal_hint_icon"></span>
+            <p class="modal_hint_text">Введите название разметки для сайта и URL с которого начнется сбор данных</p>
+        </div>
         <form class="modal_form">
-            <label for="extractor_name">Имя сборщика</label><br>
+            <label for="extractor_name">Имя разметки</label><br>
             <input type="text" id="extractor_name"><br>
             <label for="extractor_url">Стартовый URL</label><br>
             <input type="text" id="extractor_url"><br>
-            <div class="modal_text">или</div>
             <button id="create_extractor_btn" class="modal_button" type="button">Создать</button>
         </form>
     </div>

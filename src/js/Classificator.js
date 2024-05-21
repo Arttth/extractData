@@ -12,6 +12,6 @@ class Classificator {
     }
 
     // getParams() {}
-    train() {}
-    classify() {}
+    fit() {}
+    predict() {}
 }

@@ -1,20 +1,34 @@
 <div id="modal" class="modal">
             <div class="modal_header">
                 <a href="#" class="modal_close">X</a>
-                <div class="modal_title">Выбор типа элементов</div>
+                <div class="modal_title">Выбор элементов</div>
             </div>
             <div class="modal_content">
-                <div class="modal_text"></div>
-                <form class="modal_form">
-                    <label for="elem_name">Имя элементов</label><br>
-                    <input type="text" id="elem_name"><br>
-                    <label for="elem_type">Тип элемента</label><br>
-                    <select  id="elem_type">
-                        <option value="link">Link</option>
-                        <option value="text">Text</option>
-                        <option value="img">Image</option>
-                    </select><br>
-                    <button id="type_btn" class="modal_button" type="button">Продолжить</button>
-                </form>
+                <div class="modal_hint">
+                    <span class="modal_hint_icon"></span>
+                    <p class="modal_hint_text">Введите название и тип выбираемых элементов,
+                        а также поставьте отметку 'Одиночный элемент', если со страницы необходимо извлечь только один элемент</p>
+                </div>
+                <div class="modal_form">
+                    <div class="modal_zone_container">
+                        <label for="elem_name">Имя элементов</label><br>
+                        <input type="text" id="elem_name"><br>
+                    </div>
+                    <div class="modal_zone_container">
+                        <label for="elem_type">Тип элемента</label><br>
+                        <select  id="elem_type">
+                            <option value="link">Link</option>
+                            <option value="text">Text</option>
+                            <option value="img">Image</option>
+                        </select><br>
+                    </div>
+                    <div class="modal_zone_container">
+                        <input type="checkbox" id="elem_single">
+                        <label for="elem_single">Одиночный элемент</label>
+                    </div>
+                    <div class="modal_zone_container">
+                        <button id="type_btn" class="modal_button" type="button">Продолжить</button>
+                    </div>
+                </div>
             </div>
 </div>

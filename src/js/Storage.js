@@ -4,11 +4,6 @@ function removeCollector(collector) {
         });
 }
 
-function saveDomain(domain) {
-    chrome.runtime.sendMessage({message: "saveDomain", 'domain': domain}, (response) => {
-        console.log(response);
-    });
-}
 
 function saveExtractor(extractor) {
     chrome.runtime.sendMessage({message: "saveExtractor", 'extractor': extractor}, (response) => {
@@ -29,14 +24,22 @@ function saveCollector(collector) {
     });
 }
 
+function putCollector(collector) {
+    chrome.runtime.sendMessage({message: "putCollector", 'collector': collector}, (response) => {
+
+    });
+}
+
 function getCollectors() {
     chrome.runtime.sendMessage({message: "getCollectors"}, (response) => {
         return response.collectors;
     });
 }
 
-function savePageClassificator() {
-
+function getCollectorsByPageSample() {
+    chrome.runtime.sendMessage({message: "getCollectorsByPageSample"}, (response) => {
+        return response.collectors;
+    });
 }
 
 function savePageSample(pageSample) {
@@ -45,29 +48,15 @@ function savePageSample(pageSample) {
     });
 }
 
-function getCollectorsByScraper(scraperName) {
-    let collectors = [];
-    chrome.runtime.sendMessage({message: "getCollectorsByScraper", scraperName}, (response) => {
-        collectors = response.collectors;
+function  getPageSamples(extractorName) {
+    chrome.runtime.sendMessage({message: "getPageSamples"}, (response) => {
+        console.log(response);
     });
-    return collectors;
 }
 
-function getPageClassificatorByScraper(scraperName) {
-    let classificator = {};
-    chrome.runtime.sendMessage({message: "getClassificatorByScraper", scraperName}, (response) => {
-        classificator = response.pageClassificator;
-    });
-    return classificator;
-}
 
 function getExtractors() {
     return
 }
 
 
-function getData() {
-};
-
-function updateData() {
-};

@@ -7,55 +7,146 @@
     right: 5%;
     top: 10%;
     font-family: 'Arial', 'Verdana', sans-serif;
-    display: flex;
+    display: inline-flex;
     flex-direction: column;
     justify-content: space-between;
     border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .modal_content {
     color: black;
     min-height: 100%;
-    background-color: gray;
+    background-color: #8aa7e5;
     padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .modal_header {
     width: 100%;
     height: 15px;
-    background-color: darkorange;
+    background-color: #054693;
     padding: 5px;
     font-size: 25px;
+    color: white;
 }
 
 .modal_close {
+    font-size: 20px;
+    color: gray;
+    cursor: pointer;
+    margin-right: 5px;
     position: absolute;
-    right: 0px;
-    top: 0px;
+    right: 0;
+    top: 0;
+    text-decoration: none;
+}
+
+.modal_text {
+    margin-bottom: 10px;
+}
+
+.modal_hint {
+    display: flex;
+    align-items: start;
+    background-color: #194a98;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    margin-bottom: 15px;
+    max-width: 500px;
+}
+
+.modal_hint_icon {
+    width: 32px;
+    height: 32px;
+    background-image: url('https://cdn2.iconfinder.com/data/icons/color-svg-vector-icons-2/512/information_info_about_question-256.png');
+    background-size: contain; /* or cover */
+    background-position: center;
+    background-repeat: no-repeat;
+    margin-right: 10px;
+    display: inline-block;
+    position: relative;
+    top: -4px;
+}
+
+.modal_hint_text {
+    font-size: 13px;
+    color: white;
+    margin: 0;
+    line-height: 1.2;
 }
 
 .modal_form {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    background-color: dodgerblue;
+    border: none;
+    border-radius: 15px;
+    color: white;
+    font-size: 15px;
+    letter-spacing: 1px;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal_form label {
+    margin-bottom: 2px;
+}
+
+.modal_form input {
+
 }
 
 .modal_title {
     position: absolute;
-    left: 0;
+    left: 10px;
     top: 0;
     font-size: 15px;
-    margin: 0px 0px 1em 0px;
+    margin: 0 0 1em 0;
 }
 
 .modal_button {
     padding: 10px 10px;
     border: none;
     border-radius: 10px;
-    background-color: darkorange;
+    background-color: #1318b9;
     text-transform: uppercase;
+    color: white;
+    margin: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .modal_button:hover {
-    background-color: #e77e06;
+    background-color: #052560;
+    color: white;
+}
+
+.modal_zone_container {
+    margin: 0 0 15px;
+}
+
+.modal_zone_container label {
+    margin-bottom: 20px;
+}
+
+#collectors_table {
+    border: 1px solid #dddddd;
+    border-collapse: collapse;
+    color: black;
+    width: 100%;
+}
+
+#collectors_table th {
+    font-weight: bold;
+    padding: 5px;
+    background: #efefef;
+    border: 1px solid #dddddd;
+}
+#collectors_table td {
+    border: 1px solid #dddddd;
+    padding: 5px;
 }

@@ -1,15 +1,20 @@
 <div id="modal" class="modal">
     <div class="modal_header">
-        <a href="#" class="modal_close">X</a>
-        <div class="modal_title">Выбор элементов</div>
+        <a href="#" class="modal_close"> &times;</a>
+        <div class="modal_title">Выбор разметки</div>
     </div>
     <div class="modal_content">
-        <div class="modal_text">Выберите экстрактор</div>
+        <div class="modal_hint">
+            <span class="modal_hint_icon"></span>
+            <p class="modal_hint_text">Выберите разметку по которой вы хотите собирать данные</p>
+        </div>
+        <div class="modal_zone_container">
         <form class="modal_form">
-            <label for="extractor_name">Экстрактор</label><br>
+            <label for="extractor_name">Созданные разметки</label><br>
             <select  id="extractor_name">
             </select><br>
         </form>
+        </div>
         <button id="select_extractor_btn" class="modal_button" type="button">Продолжить</button>
         <button id="create_extractor_btn" class="modal_button" type="button">Создать новый</button>
     </div>

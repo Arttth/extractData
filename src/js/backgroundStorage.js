@@ -7,16 +7,15 @@ function loger(err){
 
 
 function connectDB(func) {
-    let openRequest = indexedDB.open(NAME_DB, 2);
+    let openRequest = indexedDB.open(NAME_DB, 1);
 
     openRequest.onerror = loger;
 
     openRequest.onupgradeneeded = function (event) {
-        console.log('onupgradenedeed');
         let db = event.currentTarget.result;
         if (!db.objectStoreNames.contains('pageSamples')) {
             let pageSamples = db.createObjectStore('pageSamples', {
-                keyPath: ['target', 'extractorName']
+                keyPath: ['target', 'extractorName', 'url']
             });
             pageSamples.createIndex('extractorName_idx', 'extractorName');
         }
@@ -28,15 +27,9 @@ function connectDB(func) {
         }
         if (!db.objectStoreNames.contains('collectors')) {
             let collectors = db.createObjectStore('collectors', {
-                keyPath: 'collector_id', autoIncrement: true
+                keyPath: ['collectorName', 'extractorName']
             });
             collectors.createIndex('extractorName_idx', 'extractorName');
-        }
-        if (!db.objectStoreNames.contains('pageClassificators')) {
-            let pageClassificators = db.createObjectStore('pageClassificators', {
-                keyPath: 'pageClassificator_id', autoIncrement: true
-            });
-            pageClassificators.createIndex('extractorName_idx', 'extractorName');
         }
 
         connectDB(func);
@@ -59,6 +52,20 @@ function setCollector(collector) {
         connectDB(function (db) {
             let request =
                 db.transaction('collectors', 'readwrite').objectStore('collectors').add(collector);
+            request.onerror = loger;
+            request.onsuccess = function () {
+                return resolve(request.result);
+            }
+        });
+    });
+}
+
+function putCollector(collector) {
+    console.log(collector);
+    return new Promise((resolve, reject) => {
+        connectDB(function (db) {
+            let request =
+                db.transaction('collectors', 'readwrite').objectStore('collectors').put(collector);
             request.onerror = loger;
             request.onsuccess = function () {
                 return resolve(request.result);
@@ -120,10 +127,26 @@ function setPageSample(pageSample) {
     });
 }
 
-function getCollector(collector_id, func){
+function getPageSamplesByExtractor(extractorName) {
+    return new Promise((resolve, reject) => {
+        connectDB(function(db){
+            let request =
+                db.transaction('pageSamples', "readonly")
+                    .objectStore('pageSamples')
+                    .index('extractorName_idx')
+                    .getAll(extractorName);
+            request.onerror = loger;
+            request.onsuccess = function(){
+                resolve(request.result ? request.result : -1);
+            }
+        });
+    });
+}
+
+function getCollector(collectorName, func){
     connectDB(function(db){
         let request =
-            db.transaction('collectors', "readonly").objectStore('collectors').get(collector_id);
+            db.transaction('collectors', "readonly").objectStore('collectors').get(collectorName);
         request.onerror = loger;
         request.onsuccess = function(){
             func(request.result ? request.result : -1);
@@ -185,22 +208,6 @@ function getExtractorByName(extractorName, func) {
             console.log(request.result.extractor_id);
             func(request.result ? request.result : -1);
         }
-    });
-}
-
-function getPageSamplesByExtractor(extractorName) {
-    return new Promise((resolve, reject) => {
-        connectDB(function(db){
-            let request =
-                db.transaction('pageSamples', "readonly")
-                    .objectStore('pageSamples')
-                    .index('extractorName_idx')
-                    .getAll(extractorName);
-            request.onerror = loger;
-            request.onsuccess = function(){
-                resolve(request.result ? request.result : -1);
-            }
-        });
     });
 }
 

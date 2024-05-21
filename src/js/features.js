@@ -1,19 +1,50 @@
 ///////////////////////////////////////
-// функции для преоброзования html-элемента в объкт для классификации элементов
+// функции для преоброзования html-элемента в объкт для классификации элементо
+function getAllStyleProperties(element) {
+    const style = window.getComputedStyle(element);
+    return Array.from(style).filter(property => style.getPropertyValue(property));
+}
+
+
 function transformElemToSample(elem) {
+    // let cssFeats = [
+    //     'color', 'height', 'width', 'font-size',
+    //     'inline-size',
+    //     'font-weight',
+    //     'block-size',
+    //     'line-height',
+    //     'perspective-origin', 'font-family'];
+    let cssFeats = [
+        // 'width',
+        // 'height',
+        // 'margin-left',
+        'color',
+        'font-size',
+        'font-weight',
+        'font-family'
+    ];
+    // let cssFeats = [
+    //     'width',
+    //     'height',
+    // ];
     let sample = {};
     sample.features = {};
+    sample.features.nameClass = nameClass(elem);
+    sample.features.id = elem.id;
     sample.features.tagName = elem.nodeName;
-    sample.features.countChildren = this.countChildren(elem);
-    sample.features.level = this.level(elem);
-    sample.features.nameClass = this.nameClass(elem);
-    this.nameParent(elem).forEach((val, key) => {
-        sample.features[key] = val;
-    });
-    // sample.features.style = this.style(elem);
+    // sample.features.countChildren = countChildren(elem);
+    sample.features.parentNameClass = nameClass(elem.parentNode);
+    sample.features.parentId = elem.parentNode.id;
+    sample.features.offsetWidth = Math.floor(elem.offsetWidth/ window.innerWidth * 30);
+    sample.features.offsetHeight = Math.floor(elem.offsetHeight/ window.innerHeight * 30);
+    sample.features.level = level(elem);
+    // mvideo гарантия
+    sample.features.previousElemText = elem.previousSibling?.textContent;
+
     sample.target = "yes";
     return sample
 }
+
 
 function transformElemsToSample(elems) {
     let samples = [];
@@ -42,24 +73,36 @@ function nameClass(element) {
         // this.illegalTags.push(element.nodeName);
         return false;
     }
-    return result
+    return result.toString();
 }
-function style(element) {
+
+
+
+function style(element, cssFeats) {
     let styles = window.getComputedStyle(element, null);
-    let css = this.anyCss;
+    let css = cssFeats;
     let styleLen = css.length;
-    let result = [];
+    const parentStyle = window.getComputedStyle(element.parentNode);
+    let result = {};
     for (let i = 0; i < styleLen; i++) {
         let prop = css[i];
         let value = styles.getPropertyValue(prop);
         if (prop === 'font-family') {
             let arr = value.split(', ', 1);
-            let font = arr[0].replace(/"/g, '');
-            value = font;
+            value = arr[0].replace(/"/g, '');
         }
-        result.push(value);
+        else if (prop === 'width') {
+            value = Math.floor(parseFloat(styles[prop]) / window.innerWidth  * 30);
+        } else if (prop === 'height') {
+            value = Math.floor(parseFloat(styles[prop]) / window.innerHeight * 30);
+        } else if (prop === 'margin-left' ||  prop === 'margin-right') {
+            value = parseFloat(styles[prop]) / parseFloat(parentStyle.width);
+        } else if (prop === 'margin-bottom' || prop === 'margin-top') {
+            value = parseFloat(styles[prop]) / parseFloat(parentStyle.height);
+        }
+        result[prop] = value;
     }
-    return result
+    return result;
 }
 // getTarget(element, datasetClassName) {
 //     let target = element.dataset[datasetClassName];
@@ -70,6 +113,7 @@ function countChildren(element) {
     let count = element.querySelectorAll('*').length;
     return count.toString()
 }
+
 function level(element) {
     let level = 0;
     while (element.nodeName !== 'BODY') {
@@ -78,8 +122,8 @@ function level(element) {
     }
     return level.toString()
 }
-function nameParent(element) {
-    let countParent = 10;
+
+function nameParent(element, countParent) {
     let result = [];
     for (let i = 1; i <= countParent; i++) {
         let countPar = '';
@@ -93,6 +137,7 @@ function nameParent(element) {
     }
     return result
 }
+
 
 //////////////////////////////////////////////
 
@@ -181,6 +226,37 @@ function calculateTextAmount() {
     const textLength = text.length;
 
     // Нормализуем длину текста к диапазону от 0 до 10
-    return Math.round(Math.min(Math.max(0, textLength / 1000), 10));
+    return Math.round(Math.min(Math.max(0, textLength / 1000), 6));
+}
+
+// Функция для получения самого часто встречающегося размера шрифта на странице
+function getMostUsedFontSize() {
+    const textElements = document.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6');
+    const fontSizeCounts = {};
+
+    // Перебираем текстовые элементы на странице
+    textElements.forEach(element => {
+        const computedStyle = window.getComputedStyle(element);
+        const fontSize = computedStyle.getPropertyValue('font-size');
+
+        // Увеличиваем счетчик для данного размера шрифта
+        if (fontSize in fontSizeCounts) {
+            fontSizeCounts[fontSize]++;
+        } else {
+            fontSizeCounts[fontSize] = 1;
+        }
+    });
+
+    // Находим самый часто встречающийся размер шрифта
+    let mostUsedFontSize = null;
+    let maxCount = 0;
+    for (const fontSize in fontSizeCounts) {
+        if (fontSizeCounts[fontSize] > maxCount) {
+            mostUsedFontSize = fontSize;
+            maxCount = fontSizeCounts[fontSize];
+        }
+    }
+
+    return mostUsedFontSize;
 }
 //////////////////////////

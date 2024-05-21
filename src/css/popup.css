@@ -1,4 +1,139 @@
 body {
-    width: 300px;
-    height: 500px;
+    width: 350px;
+    height: 400px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: 'Arial', 'Verdana', sans-serif;
+    display: inline-flex;
+    flex-direction: column;
+    border-radius: 10px;
+    background-color: #8aa7e5;
+}
+
+.popup_title {
+    background-color: #8aa7e5;
+    text-align: center;
+}
+
+.popup_main {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 10px;
+}
+
+#select-data-start {
+    padding: 25px 10px;
+    border: none;
+    border-radius: 10px;
+    width: 55%;
+    background-color: #5ea413;
+    text-transform: uppercase;
+    color: white;
+}
+
+#select-data-stop {
+    padding: 25px 10px;
+    border: none;
+    border-radius: 10px;
+    width: 34%;
+    background-color: red;
+    text-transform: uppercase;
+    color: white;
+}
+
+.settings {
+    margin: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.setting_item {
+    margin: 10px;
+    max-width: 45px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    margin-bottom: 10px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch_label {
+    color: white;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #19a619;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #19a619;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+
+#collectors_table {
+    border: 1px solid #dddddd;
+    border-collapse: collapse;
+    color: black;
+}
+
+#collectors_table th {
+    font-weight: bold;
+    padding: 5px;
+    background: #efefef;
+    border: 1px solid #dddddd;
+}
+#collectors_table td {
+    border: 1px solid #dddddd;
+    padding: 5px;
 }

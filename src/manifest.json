@@ -3,7 +3,15 @@
   "name": "dataExtractor",
   "version": "1.0",
   "description": "Extension for data extraction",
-  "permissions": ["storage", "activeTab", "tabs", "activeTab", "sidePanel"],
+  "permissions": [
+      "storage",
+      "activeTab",
+      "tabs",
+      "activeTab",
+      "sidePanel",
+      "system.cpu",
+      "system.memory"
+  ],
   "action": {
     "default_popup": "html/popup.html"
   },
@@ -15,7 +23,7 @@
       "matches": ["<all_urls>"],
       "run_at": "document_idle",
       "all_frames": false,
-      "js": ["js/Marker.js", "js/Storage.js", "js/features.js", "js/Dataset.js", "js/Selector.js", "js/Collector.js", "js/Extractor.js","js/Classificator.js", "js/NaiveBayes.js", "js/modal.js",
+      "js": ["js/Storage.js", "js/features.js", "js/Dataset.js", "js/Selector.js", "js/Collector.js", "js/Extractor.js","js/Classificator.js", "js/NaiveBayes.js", "js/modal.js",
             "js/content-script.js"]
     }
   ],
@@ -31,7 +39,11 @@
         "html/type-elem.html",
         "html/view-elem.html",
         "html/create-extractor.html",
-        "html/select-extractor.html"
+        "html/select-extractor.html",
+        "html/update-collectors.html",
+        "html/select-pageSample.html",
+        "html/create-pageSample.html",
+        "img/info.png"
       ],
       "matches": ["<all_urls>"]
     }

@@ -191,8 +191,7 @@ function createSelectElemWindow(shadowRoot) {
                 collector['pageSampleName'] = currentPageSampleName;
                 collector['isSingleElemCollector'] = currentCollector.isSingleElemCollector;
                 collector['isReadyToCollect'] = currentCollector.isReadyToCollect;
-                collector['optimalThreshold'] = currentCollector.optimalThreshold;
-                collector['optimalThreshold'] = currentCollector.getOptimalThreshold();
+                collector['optimalThreshold'] = currentCollector.getClassificator().getThreshold();
                 saveCollector(collector);
 
                 selector.stop();
@@ -415,12 +414,11 @@ function createUpdateCollectorsUntilExtract(shadowRoot, collectors) {
                 currentPageSampleCollectors = collectors;
             }
 
-            function updateSelector()  {
+            function updateCollector()  {
                 for (let i = 0; i < currentPageSampleCollectors.length; ++i) {
                     if (currentPageSampleCollectors[i].name === selectedCollectorName) {
                         let selectedElems = selector.getSelectedElems();
-                        currentPageSampleCollectors[i].getClassificator().addTrainObj(transformElemToSample(selectedElems[0]));
-                        currentPageSampleCollectors[i].getClassificator().train();
+                        currentPageSampleCollectors[i].getClassificator().fitPartial(transformElemToSample(selectedElems[0]));
                         selectedData.push({
                             name: currentPageSampleCollectors[i].name,
                             type: currentPageSampleCollectors[i].type,
@@ -433,7 +431,7 @@ function createUpdateCollectorsUntilExtract(shadowRoot, collectors) {
             }
 
             document.removeEventListener("selected", selectElems);
-            document.addEventListener("selected", updateSelector);
+            document.addEventListener("selected", updateCollector);
 
             let collectorsTableTBody = root.querySelector("#collectors_table_tBody");
 
@@ -471,7 +469,7 @@ function createUpdateCollectorsUntilExtract(shadowRoot, collectors) {
             }
 
             let btn = root.querySelector("#update_collectors_btn");
-            let updateCollectors = [];
+            let updatedCollectors = [];
             btn.addEventListener('click', () => {
                 let changeIsSingleElem = false;
                 if (selectedCollectorName === "empty") {
@@ -490,12 +488,13 @@ function createUpdateCollectorsUntilExtract(shadowRoot, collectors) {
                     } else {
                         collector['isReadyToCollect'] = collectors[i].isReadyToCollect;
                     }
+                    collector['optimalThreshold'] = collectors[i].getClassificator().getThreshold();
 
-                    updateCollectors.push(collector);
+                    updatedCollectors.push(collector);
                 }
 
-                document.removeEventListener("selected", updateSelector);
-                document.dispatchEvent(new CustomEvent("collectorsUpdated", {detail: { selectedData: selectedData, collectors: updateCollectors }}));
+                document.removeEventListener("selected", updateCollector);
+                document.dispatchEvent(new CustomEvent("collectorsUpdated", {detail: { selectedData: selectedData, collectors: updatedCollectors }}));
             });
         });
 }

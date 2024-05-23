@@ -7,13 +7,6 @@ function getAllStyleProperties(element) {
 
 
 function transformElemToSample(elem) {
-    // let cssFeats = [
-    //     'color', 'height', 'width', 'font-size',
-    //     'inline-size',
-    //     'font-weight',
-    //     'block-size',
-    //     'line-height',
-    //     'perspective-origin', 'font-family'];
     let cssFeats = [
         // 'width',
         // 'height',
@@ -35,11 +28,11 @@ function transformElemToSample(elem) {
     // sample.features.countChildren = countChildren(elem);
     sample.features.parentNameClass = nameClass(elem.parentNode);
     sample.features.parentId = elem.parentNode.id;
-    sample.features.offsetWidth = Math.floor(elem.offsetWidth/ window.innerWidth * 30);
-    sample.features.offsetHeight = Math.floor(elem.offsetHeight/ window.innerHeight * 30);
-    sample.features.level = level(elem);
+    sample.features.offsetWidth = Math.floor(elem.offsetWidth/ window.innerWidth * 15);
+    sample.features.offsetHeight = Math.floor(elem.offsetHeight/ window.innerHeight * 15);
+    // sample.features.level = level(elem);
     // mvideo гарантия
-    sample.features.previousElemText = elem.previousSibling?.textContent;
+    sample.features.previousElemText = getTextFromElement(elem.previousElementSibling);
 
     sample.target = "yes";
     return sample
@@ -53,6 +46,33 @@ function transformElemsToSample(elems) {
     });
     return samples;
 }
+
+/*
+function getPreviousElementText(element) {
+    let previousElement = element.previousElementSibling;
+
+    while (previousElement) {
+        let text = getTextFromElement(previousElement);
+        if (text.trim() !== "") {
+            return text;
+        }
+        previousElement = previousElement.previousElementSibling;
+    }
+
+    let parent = element.parentElement;
+    if (parent) {
+        return getPreviousElementText(parent);
+    }
+
+    return "";
+}
+*/
+
+
+function getTextFromElement(element) {
+    return element ? element.textContent || element.innerText || "" : "";
+}
+
 function nameClass(element) {
     let countClass = 2;
     let result = [];

@@ -87,10 +87,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
    return true;
 });
 
-function getQueueObj(priority, data, type) {
-
-}
-
 // получить данные с бд
 async function extractData(extractorName, urls) {
     // проход по ссылкам
@@ -98,10 +94,8 @@ async function extractData(extractorName, urls) {
         // получаем коллекторы по странице
         // собираем данные со страницы используя коллекторы
     // инициализация кучи, объекты в куче имеют вид {...: ..., priority: priority}
-   let extractedData = [];
    let priorityQueue = new Heap();
    let priority = 0;
-   // let urlsPrior = makeObjPriority(arrOfElemToArrOfObj(urls, "url"), priority);
     let urlsPrior = [];
     urls.forEach((url) => {
       urlsPrior.push({priority: priority, data: url, type: 'link'});
@@ -118,36 +112,36 @@ async function extractData(extractorName, urls) {
    ];
    let [pageSamples, collectors] = await Promise.all(requestsDB);
 
-   // проход по страницам, используя кучу
+   // создание вкладки
    if (urls[0] === undefined) {
        console.error("arr 'urls' is empty");
    }
    let tab = await createTab(urls[0]);
+
+   // проход по очереди с приоритетом
+   let data = new Map();
    let currentData = [];
    let titles = ["Стратовая страница"];
    let lastPrior = 0;
    let rowCount = 0;
-   let maxPrior = 0;
    while (!priorityQueue.isEmpty()) {
        let current = priorityQueue.pop();
-       if (current.priority > maxPrior) {
-           maxPrior = current.priority;
-       }
 
        if (current.type === 'link') {
            await goToUrl(tab, current.data);
            let response = await chrome.tabs.sendMessage(tab.id, {message: "extractData", pageSamples: pageSamples, collectors: collectors});
            console.log(response.message);
            console.log(response.useData);
+           priority = current.priority;
            if (response.message === "ok") {
-               priority = current.priority;
                for (let i = 0; i < response.useData.length; ++i) {
-                   let objs = [];
+                   let priorityElems = [];
                    priority++;
                    response.useData[i].data.forEach((elem) => {
-                       objs.push({priority: priority, data: elem, type: response.useData[i].type});
+                       priorityElems.push({priority: priority, data: elem, type: response.useData[i].type});
                    });
-                   priorityQueue.addElems(objs);
+                   priorityQueue.addElems(priorityElems);
+                   titles.push(response.collectorName);
                }
            } else if (response.message === "update") {
                setCollector(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
@@ -155,14 +149,13 @@ async function extractData(extractorName, urls) {
                collectors.push(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
                pageSamples.push(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
            } else if (response.message === "singleElemCollectorUpdate") {
-               priority = current.priority;
                for (let i = 0; i < response.useData.length; ++i) {
-                   let objs = [];
+                   let priorityElems = [];
                    priority++;
                    response.useData[i].data.forEach((elem) => {
-                       objs.push({priority: priority, data: elem, type: response.useData[i].type});
+                       priorityElems.push({priority: priority, data: elem, type: response.useData[i].type});
                    });
-                   priorityQueue.addElems(objs);
+                   priorityQueue.addElems(priorityElems);
                }
                response.collectors.forEach(collector => {
                   putCollector(Object.assign(collector, {'extractorName': extractor.extractorName}));
@@ -174,20 +167,21 @@ async function extractData(extractorName, urls) {
                    }
                });
            } else if (response.message === "continue") {
-               console.log("CONTINUE");
+               continue;
            } else {
                console.log(response.message);
            }
-       } else {
-           if (maxPrior <= lastPrior) {
-               dataForDownload[rowCount] = Array.from(currentData);
-               rowCount++;
-           }
-           console.log(current);
-           currentData[current.priority] = current.data;
-           lastPrior = current.priority;
-           console.log(priorityQueue);
        }
+
+       if (lastPrior !== 0 && current.priority === 1) {
+           dataForDownload[rowCount] = Array.from(currentData);
+           rowCount++;
+       }
+       console.log(current);
+       currentData[current.priority] = current.data;
+       lastPrior = current.priority;
+       console.log(priorityQueue);
+
    }
    console.log("rowCount = " + rowCount);
    console.log("dataForDownload = " + dataForDownload);

@@ -6,7 +6,7 @@ let pageClassificator = new NaiveBayes();
 let pageDataset = new Dataset();
 
 let settingSkipUnmarked = false;
-let waitingTimeForLoadingPage = 6000;
+let waitingTimeForLoadingPage = 3000;
 
 let collectors = [];
 let currentCollector = {};
@@ -21,10 +21,6 @@ let url = document.location.href;
 let rootModal = document.createElement("div");
 rootModal.classList.add("rootModalExtractData");
 const shadowRoot = rootModal.attachShadow({mode: 'open'});
-let startX = rootModal.style.right;
-let startY = rootModal.style.top;
-let newX, newY;
-
 document.body.appendChild(rootModal);
 
 init();
@@ -34,7 +30,7 @@ function init() {
     link.rel = "stylesheet";
     link.href = chrome.runtime.getURL("css/content.css");
     document.head.appendChild(link);
-    //
+
     let work = document.location.host  + "_work";
     console.log(work);
     chrome.storage.local.get(work, (data) => {
@@ -222,14 +218,14 @@ function createCollectorFromDB(collectorDB) {
     newCollector.getClassificator().setParams(collectorDB.collectorClassificator.params);
     newCollector.isReadyToCollect = collectorDB.isReadyToCollect;
     newCollector.getDataset().setTargets(["yes", "no"]);
-    newCollector.setOptimalThreshold(collectorDB.optimalThreshold);
+    newCollector.getClassificator().setThreshold(collectorDB.optimalThreshold);
     return newCollector;
 }
 function getUseDataFromCollector(collector) {
     let allElems = document.body.querySelectorAll("*");
     collector.getDataset().setData(transformElemsToSample([]), transformElemsToSample(allElems));
     let predict_elems = [];
-    let predict_ind = collector.getClassificator().classify(collector.getOptimalThreshold());
+    let predict_ind = collector.getClassificator().predict(collector.getClassificator().getThreshold());
     predict_ind.forEach((ind) => {
         predict_elems.push(allElems[ind]);
     });
@@ -246,7 +242,7 @@ function getUseDataFromSingleElemCollector(collector) {
     let allElems = document.body.querySelectorAll("*");
     collector.getDataset().setData(transformElemsToSample([]), transformElemsToSample(allElems));
     let predict_elems = [];
-    let predict_ind = collector.getClassificator().classify(collector.getOptimalThreshold());
+    let predict_ind = collector.getClassificator().predict(collector.getClassificator().getThreshold());
     predict_ind.forEach((ind) => {
         predict_elems.push(allElems[ind]);
     });
@@ -281,44 +277,6 @@ function getUseData(elem, type) {
 // событие selected возникает, если элемент на странице выбран
 document.addEventListener("selected", selectElems);
 
-function chiSquaredTest(data, featureKey) {
-    let contingencyTable = {};
-    let classTotals = {};
-    let featureTotals = {};
-    let totalObservations = 0;
-
-    // Building the contingency table
-    data.forEach(item => {
-        const featureValue = item.features[featureKey];
-        const targetValue = item.target;
-
-        if (!contingencyTable[featureValue]) {
-            contingencyTable[featureValue] = {};
-        }
-
-        if (!contingencyTable[featureValue][targetValue]) {
-            contingencyTable[featureValue][targetValue] = 0;
-        }
-
-        contingencyTable[featureValue][targetValue]++;
-        featureTotals[featureValue] = (featureTotals[featureValue] || 0) + 1;
-        classTotals[targetValue] = (classTotals[targetValue] || 0) + 1;
-        totalObservations++;
-    });
-
-    // Calculating the Chi-squared statistic
-    let chiSquared = 0;
-    Object.keys(contingencyTable).forEach(featureValue => {
-        Object.keys(contingencyTable[featureValue]).forEach(targetValue => {
-            const observed = contingencyTable[featureValue][targetValue];
-            const expected = (featureTotals[featureValue] * classTotals[targetValue]) / totalObservations;
-            chiSquared += Math.pow(observed - expected, 2) / expected;
-        });
-    });
-
-    return chiSquared;
-}
-
 function findOptimalThreshold(classifier, validationData, step = 0.01) {
     let bestThreshold = 0;
     let bestF1Score = 0;
@@ -350,6 +308,9 @@ function findOptimalThreshold(classifier, validationData, step = 0.01) {
         }
     }
 
+    if (bestThreshold < 0.01) {
+        bestThreshold = 0.01;
+    }
     return bestThreshold;
 }
 
@@ -380,42 +341,18 @@ function selectElems() {
         currentDataset.setData(trainData, testData);
         currentDataset.setTargets(["yes", "no"]);
         let currentClassificator = currentCollector.getClassificator();
-        // TODO: возможно перенести таргеты из датасета в основной скрипт
         currentClassificator.clearParams();
-        currentClassificator.train();
+        currentClassificator.fit();
         const optimalThreshold = findOptimalThreshold(currentClassificator, validationData);
-        currentCollector.setOptimalThreshold(optimalThreshold);
+        currentCollector.getClassificator().setThreshold(optimalThreshold);
         console.log('Optimbal threshold: ' + optimalThreshold);
-        // TODO:
-        // currentClassificator.classify();
-        // testData.forEach((sample, index) => {
-        //     if (sample.target === "yes") {
-        //         console.log("yes");
-        //         predict_elems.push(allElems[index]);
-        //     }
-        // });
         let predict_elems = [];
-        let predict_ind = currentClassificator.classify(optimalThreshold);
+        let predict_ind = currentClassificator.predict(optimalThreshold);
         console.log(predict_ind);
-        testData.forEach(elem => {
-            elem.target = "no";
-        })
         predict_ind.forEach((ind) => {
             predict_elems.push(allElems[ind]);
             testData[ind].target = "yes";
         });
-        let myElem = Array.from(allElems);
-        selectedElems.forEach(elem => {
-            let selectedElemIndex = myElem.indexOf(elem);
-            testData[selectedElemIndex].target = "yes";
-            console.log('selectedElemIndex = ' + selectedElemIndex);
-        })
-        console.log('=============================================');
-        for (let key in trainData[0].features) {
-            const chiSquaredColor = chiSquaredTest(testData.concat(trainData), key);
-            console.log('Chi-squared for ' + key + ':' , chiSquaredColor);
-        }
-        console.log('=============================================');
         selector.markPredictElems(predict_elems);
         currentPredictedElems = predict_elems;
     }  else {
@@ -424,10 +361,9 @@ function selectElems() {
         currentDataset.setData(trainData, []);
         currentDataset.setTargets(["yes", "no"]);
         let currentClassificator = currentCollector.getClassificator();
-        // TODO: возможно перенести таргеты из датасета в основной скрипт
-        currentClassificator.train();
+        currentClassificator.fit();
         const optimalThreshold = findOptimalThreshold(currentClassificator, validationData);
-        currentCollector.setOptimalThreshold(optimalThreshold);
+        currentCollector.getClassificator().setThreshold(optimalThreshold);
     }
 }
 

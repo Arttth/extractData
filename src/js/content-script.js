@@ -100,6 +100,16 @@ function createTimer(ms) {
     }, 1000);
 }
 
+function doRandomEvents(ms) {
+    return setInterval(function updateTimer() {
+        window.scrollTo({
+            left: 0,
+            top: document.body.scrollHeight/2,
+            behavior: 'smooth'
+        })
+    }, 2000);
+}
+
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.message) {
@@ -115,7 +125,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case "extractData":
             // ожидание полной прогрузки страницы
             let stopTimerId = createTimer(waitingTimeForLoadingPage);
+            // let stopDoRandomEvents = doRandomEvents();
             setTimeout(async function () {
+                clearInterval(stopTimerId);
+                // clearInterval(stopDoRandomEvents);
                 // классификация страницы
                 let testData = [createCurPageSample(undefined, window.location.href)];
                 pageDataset.setData(message.pageSamples, testData);
@@ -261,17 +274,33 @@ function getUseData(elem, type) {
         case "text":
             return elem.innerText;
         case "link":
+            let link_elem = elem;
             if (elem.tagName === 'A') {
-                return elem.href;
-            } else if (elem.querySelector("a"))  {
-                return elem.querySelector("a").href;
+                link_elem =  elem;
+            } else if ((link_elem = elem.querySelector("a")))  {
+
+            } else if ((link_elem = getAnchorElement(elem, 3))) {
+                
             } else {
-                alert("Несоответствие типов, не может быть извлечен link");
+                alert("Несоответствие типов, не может быть извлечен link")
                 return elem.innerText;
             }
+            return link_elem.href;
         case "img":
             return elem.src;
     }
+}
+
+function getAnchorElement(element, maxDepth = 10) {
+    let depth = 0;
+    while (element && depth < maxDepth) {
+        if (element.tagName === 'A') {
+            return element;
+        }
+        element = element.parentElement;
+        depth++;
+    }
+    return null;
 }
 
 // событие selected возникает, если элемент на странице выбран

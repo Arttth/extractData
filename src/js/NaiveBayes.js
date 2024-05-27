@@ -200,20 +200,43 @@ class NaiveBayes extends Classificator {
         return f1;
     }
 
-    findOptimalThreshold() {
-        let bestThreshold = 0.5;
-        let bestF1 = 0;
+    findOptimalThreshold(classifier=this, validationData, step = 0.01) {
+        let bestThreshold = 0;
+        let bestF1Score = 0;
 
-        for (let threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-            const f1 = this.evaluateThreshold(threshold);
-            if (f1 > bestF1) {
-                bestF1 = f1;
+        for (let threshold = 0; threshold <= 1; threshold += step) {
+            let tp = 0, fp = 0, fn = 0;
+
+            for (let sample of validationData) {
+                let probs = classifier.calculateProbabilities(sample.features);
+                let maxProb = Math.max(...probs);
+                let predicted = maxProb > threshold ? classifier.dataset.targets[probs.indexOf(maxProb)] : "-";
+
+                if (predicted === sample.target && predicted !== "-") {
+                    tp++;
+                } else if (predicted !== sample.target && predicted !== "-") {
+                    fp++;
+                } else if (predicted === "-" && sample.target !== "-") {
+                    fn++;
+                }
+            }
+
+            let precision = tp / (tp + fp);
+            let recall = tp / (tp + fn);
+            let f1Score = 2 * (precision * recall) / (precision + recall);
+
+            if (f1Score >= bestF1Score) {
+                bestF1Score = f1Score;
                 bestThreshold = threshold;
             }
         }
 
-        this.threshold = bestThreshold;
+        if (bestThreshold < 0.01) {
+            bestThreshold = 0.01;
+        }
+        return bestThreshold;
     }
+
 
 
     updateThreshold(newSample) {
@@ -261,7 +284,7 @@ class NaiveBayes extends Classificator {
     fitPartial(obj) {
         this.dataset.trainData.push(obj);
         this.fit();
-        this.findOptimalThreshold();
+        this.threshold = this.findOptimalThreshold(this, [obj]);
     }
 
     clearParams() {

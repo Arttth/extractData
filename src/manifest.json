@@ -7,16 +7,10 @@
       "storage",
       "activeTab",
       "tabs",
-      "activeTab",
-      "sidePanel",
-      "system.cpu",
-      "system.memory"
+      "notifications"
   ],
   "action": {
     "default_popup": "html/popup.html"
-  },
-  "side_panel": {
-    "default_path": "html/sidepanel.html"
   },
   "content_scripts": [
     {

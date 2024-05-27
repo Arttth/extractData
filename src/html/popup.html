@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="../css/popup.css"/>
-    <title>Data Extractor</title>
+    <title>Извлечение данных</title>
 </head>
 <body>
     <div class="popup_title">
-        <h1>Extract Data</h1>
+        <h1>Извлечение данных</h1>
     </div>
     <div class="popup_main">
-        <button id="select-data-start" class="popup_btn">Start Extract</button>
-        <button id="select-data-stop" class="popup_btn">Stop</button>
+        <button id="select-data-start" class="popup_btn">Извлечение</button>
+        <button id="select-data-stop" class="popup_btn">Скачать данные</button>
     </div>
     <div class="settings">
         <div class="setting_item">
@@ -19,7 +19,7 @@
                 <input type="checkbox">
                 <span class="slider round"></span>
             </label>
-            <span class="switch_label">
+            <span class="setting_item_label">
                 Пропускать неразмеченные страницы
             </span>
         </div>
@@ -35,18 +35,17 @@
                 <span class="slider round"></span>
             </label>
         </div>
-    </div>
-    <div id="performance-info">
-        <div>
-            <h3>CPU Info</h3>
-            <p>Model: <span id="cpu-model"></span></p>
-            <p>Number of Processors: <span id="num-processors"></span></p>
-            <ul id="cpu-usage"></ul>
-        </div>
-        <div>
-            <h3>Memory Info</h3>
-            <p>Total Memory: <span id="total-memory"></span></p>
-            <p>Available Memory: <span id="available-memory"></span></p>
+        <div class="setting_item">
+            <span class="setting_item_label">
+                Формат для скачивания
+            </span>
+            <label class="select">
+                <select id="dataFormat">
+                    <option value="csv">CSV</option>
+                    <option value="json">JSON</option>
+                </select>
+            </label>
+
         </div>
     </div>
 </body>

@@ -8,10 +8,8 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 let extractor = {};
-let pageClassificator = {};
-let collectors = [];
-let csv = [];
 let dataForDownload = [];
+let titles = ["Стартовая страница"];
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("BACKGROUND MSG");
     console.log(request.message);
@@ -25,7 +23,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({"message": "ok"});
          break;
 
-      case 'saveCollector':
+       case 'getExtractors':
+           getExtractors()
+               .then(res => {
+                   sendResponse({'extractors': res});
+               })
+           break;
+
+       case 'makeExtractorCurrent':
+           getExtractor(request.extractorName)
+               .then((res) => {
+                   extractor.extractorName = request.extractorName;
+                   extractor.extractorStartUrl = res.extractorStartUrl;
+               });
+           sendResponse({"my":"yuou"});
+           break;
+
+       case 'saveCollector':
          setCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}));
          break;
 
@@ -33,56 +47,45 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           putCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}));
           break;
 
-      case 'getExtractors':
-         getExtractors()
-             .then(res => {
-                sendResponse({'extractors': res});
-             })
-         break;
-      case 'makeExtractorCurrent':
-         getExtractor(request.extractorName)
-             .then((res) => {
-                 extractor.extractorName = request.extractorName;
-                 extractor.extractorStartUrl = res.extractorStartUrl;
-             });
-          sendResponse({"my":"yuou"});
-         break;
-      case 'extract':
-         extractData(extractor.extractorName, [extractor.extractorStartUrl])
-             .then(data => sendResponse({ message: "ok", useData: data }))
-             .catch(err => {
-                 sendResponse({ message: "error", error: err.toString() });
-                 console.log(err);
-             });
-         console.log("extractorName " + extractor.extractorStartUrl);
-         return true;
-
        case 'savePageSample':
            setPageSample(Object.assign(request.pageSample, {'extractorName': extractor.extractorName}));
            sendResponse({"my":"yuou"});
            console.log("Page Sample background " + request.pageSample);
            break;
 
-       case 'download':
-            if (dataForDownload.length > 0) {
-                switch (request.format) {
-                    case 'csv':
-                        sendResponse({message: 'ok', data: saveToCSV(dataForDownload)});
-                        break;
-                }
-            } else {
-                console.log("data is empty");
-            }
-           break;
-       case 'getPerformanceData':
-           sendResponse({ message: "performanceData", data: performanceData });
-           break;
        case 'getPageSamplesByExtractor':
            getPageSamplesByExtractor(extractor.extractorName)
                .then((res) => {
                    sendResponse({message: "pageSamples", pageSamples: res});
                })
            break;
+
+       case 'download':
+            if (dataForDownload.length > 0) {
+                let formattedData;
+                switch (request.format) {
+                    case 'csv':
+                        formattedData = saveToCSV(titles, dataForDownload, request.notIncludeColumns);
+                        break;
+                    case 'json':
+                        formattedData = saveToJSON(titles, dataForDownload, request.notIncludeColumns);
+                        break;
+                }
+                sendResponse({message: 'ok', formattedData: formattedData, extractorName: extractor.extractorName});
+            } else {
+                sendResponse({message: 'empty'});
+            }
+           break;
+
+       case 'extract':
+           extractData(extractor.extractorName, [extractor.extractorStartUrl])
+               .then(data => sendResponse({ message: "ok", useData: data }))
+               .catch(err => {
+                   sendResponse({ message: "error", error: err.toString() });
+                   console.log(err);
+               });
+           console.log("extractorName " + extractor.extractorStartUrl);
+           return true;
    }
    return true;
 });
@@ -119,9 +122,7 @@ async function extractData(extractorName, urls) {
    let tab = await createTab(urls[0]);
 
    // проход по очереди с приоритетом
-   let data = new Map();
    let currentData = [];
-   let titles = ["Стратовая страница"];
    let lastPrior = 0;
    let rowCount = 0;
    while (!priorityQueue.isEmpty()) {
@@ -141,7 +142,9 @@ async function extractData(extractorName, urls) {
                        priorityElems.push({priority: priority, data: elem, type: response.useData[i].type});
                    });
                    priorityQueue.addElems(priorityElems);
-                   titles.push(response.collectorName);
+                   if (titles.indexOf(response.useData[i].name) < 0) {
+                       titles.push(response.useData[i].name);
+                   }
                }
            } else if (response.message === "update") {
                setCollector(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
@@ -175,6 +178,7 @@ async function extractData(extractorName, urls) {
 
        if (lastPrior !== 0 && current.priority === 1) {
            dataForDownload[rowCount] = Array.from(currentData);
+           currentData.length = 0;
            rowCount++;
        }
        console.log(current);
@@ -183,24 +187,15 @@ async function extractData(extractorName, urls) {
        console.log(priorityQueue);
 
    }
-   console.log("rowCount = " + rowCount);
-   console.log("dataForDownload = " + dataForDownload);
 }
 
-function makeObjPriority(objs, priority) {
-    let objsPrior = [];
-    for (let i = 0; i < objs.length; ++i) {
-        objsPrior.push(Object.assign(objs[i], {priority: priority}));
-    }
-    return objsPrior;
-}
-
-function arrOfElemToArrOfObj(elems, name) {
-    let objs = [];
-    for (let i = 0; i < elems.length; ++i) {
-        objs.push({[name]: elems[i]});
-    }
-    return objs;
+function endExtractNotification() {
+    chrome.notifications.create({
+        title: "Данные собраны",
+        message: "Теперь ты можешь скачать их!",
+        iconUrl: './img/prediction.png',
+        type: "basic"
+    });
 }
 
 function goToUrl(tab, url) {

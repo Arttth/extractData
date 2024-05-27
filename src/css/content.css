@@ -1,19 +1,24 @@
 [data-mark="mark_train"] {
-    background-color: #a22ca2;
-    opacity: 0.7;
+    background-color: #a22ca2 !important;
+    opacity: 0.7 !important;
+    border: 1px solid #a22ca2;
 }
 
 [data-mark="possible_mark_train"] {
-    background-color: #19a619;
-    opacity: 0.7;
+    background-color: #2061b0 !important;
+    /*background-color: #19a619;*/
+    opacity: 0.7 !important;
+    border: 1px solid #2061b0;
 }
 
 [data-mark="possible_del_mark_train"] {
-    background-color: red;
-    opacity: 0.7;
+    background-color: red !important;
+    opacity: 0.7 !important;
+    border: 1px solid red;
 }
 
 [data-mark="mark_predict"] {
-    background-color: orange;
-    opacity: 0.7;
+    background-color: orange !important;
+    opacity: 0.7 !important;
+    border: 1px solid orange;
 }

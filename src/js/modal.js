@@ -140,6 +140,7 @@ function createSelectPageSampleWindow(shadowRoot) {
                 currentPageSampleName = pageSampleSelect.options[pageSampleSelect.selectedIndex].text;
                 let pageSample = addPageSample(currentPageSampleName, window.location.href);
                 savePageSample(pageSample);
+                createViewElemWindow(shadowRoot);
             });
             
 
@@ -224,6 +225,11 @@ function createSelectElemWindow(shadowRoot) {
 function createSelectAttrWindow(shadowRoot) {
     createModal("html/type-elem.html", 'css/modal.css', shadowRoot)
         .then(root => {
+            const backSelectElemBtn = root.querySelector("#back_select_elem");
+            backSelectElemBtn.addEventListener("click", () => {
+                createSelectPageSampleWindow(shadowRoot);
+            });
+
             const typeElemBtn = root.querySelector("#type_btn");
             typeElemBtn.addEventListener("click", (event) => {
                 const elemsName = root.querySelector("#elem_name");
@@ -445,11 +451,6 @@ function createUpdateCollectorsUntilExtract(shadowRoot, collectors) {
                 let tdType = document.createElement('td');
                 tdType.innerText = currentPageSampleCollectors[i].type;
                 tr.append(tdType);
-                let tdIsCorrectCollector = document.createElement("td");
-                let checkBoxIsCorrectCollector = document.createElement("input");
-                checkBoxIsCorrectCollector.type = "checkbox";
-                tdIsCorrectCollector.append(checkBoxIsCorrectCollector);
-                tr.append(tdIsCorrectCollector);
 
                 tr.addEventListener("click", (event) => {
                     let elem = event.target;

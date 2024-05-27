@@ -7,19 +7,6 @@ function getAllStyleProperties(element) {
 
 
 function transformElemToSample(elem) {
-    let cssFeats = [
-        // 'width',
-        // 'height',
-        // 'margin-left',
-        'color',
-        'font-size',
-        'font-weight',
-        'font-family'
-    ];
-    // let cssFeats = [
-    //     'width',
-    //     'height',
-    // ];
     let sample = {};
     sample.features = {};
     sample.features.nameClass = nameClass(elem);
@@ -28,11 +15,13 @@ function transformElemToSample(elem) {
     // sample.features.countChildren = countChildren(elem);
     sample.features.parentNameClass = nameClass(elem.parentNode);
     sample.features.parentId = elem.parentNode.id;
-    sample.features.offsetWidth = Math.floor(elem.offsetWidth/ window.innerWidth * 15);
-    sample.features.offsetHeight = Math.floor(elem.offsetHeight/ window.innerHeight * 15);
+    //sample.features.offsetWidth = Math.floor(elem.offsetWidth/ window.innerWidth * 15);
+    //sample.features.offsetHeight = Math.floor(elem.offsetHeight/ window.innerHeight * 15);
     // sample.features.level = level(elem);
     // mvideo гарантия
     sample.features.previousElemText = getTextFromElement(elem.previousElementSibling);
+    // sample.features.parentTagName = elem.parentNode.tagName;
+    // sample.features.parentPreviousElemText = getTextFromElement(elem.parentNode.previousElementSibling);
 
     sample.target = "yes";
     return sample
@@ -47,32 +36,25 @@ function transformElemsToSample(elems) {
     return samples;
 }
 
-/*
+
 function getPreviousElementText(element) {
     let previousElement = element.previousElementSibling;
 
-    while (previousElement) {
-        let text = getTextFromElement(previousElement);
-        if (text.trim() !== "") {
-            return text;
+    let previousElementText = "";
+    if (previousElement) {
+        while (previousElementText === "" && previousElement.childElementCount === 1) {
+            previousElementText = getTextFromElement(previousElement);
+            previousElement = previousElement.firstElementChild;
         }
-        previousElement = previousElement.previousElementSibling;
     }
 
-    let parent = element.parentElement;
-    if (parent) {
-        return getPreviousElementText(parent);
-    }
-
-    return "";
+    return previousElement;
 }
-*/
-
 
 function getTextFromElement(element) {
     return element ? element.textContent || element.innerText || "" : "";
 }
-
+/*
 function nameClass(element) {
     let countClass = 2;
     let result = [];
@@ -93,6 +75,28 @@ function nameClass(element) {
         // this.illegalTags.push(element.nodeName);
         return false;
     }
+    return result.toString();
+}
+*/
+// update
+function nameClass(element) {
+    const countClass = 3;
+    let result = [];
+
+    if (!element || element.classList === 0) {
+        return ["-1", "-1"].slice(0, countClass).toString();
+    }
+
+    const arrClass = element.classList;
+
+    for (let i = 0; i < countClass; i++) {
+        if (arrClass[i]) {
+            result.push(arrClass[i]);
+        } else {
+            result.push("-1");
+        }
+    }
+
     return result.toString();
 }
 
@@ -124,11 +128,7 @@ function style(element, cssFeats) {
     }
     return result;
 }
-// getTarget(element, datasetClassName) {
-//     let target = element.dataset[datasetClassName];
-//     if (target === undefined) { return 'NaN' }
-//     else { return target }
-// }
+
 function countChildren(element) {
     let count = element.querySelectorAll('*').length;
     return count.toString()
@@ -142,22 +142,6 @@ function level(element) {
     }
     return level.toString()
 }
-
-function nameParent(element, countParent) {
-    let result = [];
-    for (let i = 1; i <= countParent; i++) {
-        let countPar = '';
-        if (element.parentNode == null) {
-            result.push("-1");
-        } else {
-            element = element.parentNode;
-            countPar = element.nodeName;
-            result.push(countPar);
-        }
-    }
-    return result
-}
-
 
 //////////////////////////////////////////////
 

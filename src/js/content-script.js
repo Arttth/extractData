@@ -5,7 +5,7 @@ let selector = {};
 let pageClassificator = new NaiveBayes();
 let pageDataset = new Dataset();
 
-let waitingTimeForLoadingPage = 2000;
+let waitingTimeForLoadingPage = 4000;
 
 let collectors = [];
 let currentCollector = {};
@@ -99,15 +99,15 @@ function createTimer(ms) {
     }, 1000);
 }
 
-// function doRandomEvents(ms) {
-//     return setInterval(function updateTimer() {
-//         window.scrollTo({
-//             left: 0,
-//             top: document.body.scrollHeight/2,
-//             behavior: 'smooth'
-//         })
-//     }, 2000);
-// }
+function doRandomEvents(ms) {
+    return setInterval(function updateTimer() {
+        window.scrollTo({
+            left: 0,
+            top: document.body.scrollHeight/2,
+            behavior: 'smooth'
+        })
+    }, 2000);
+}
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -124,10 +124,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case "extractData":
             // ожидание полной загрузки страницы
             let stopTimerId = createTimer(waitingTimeForLoadingPage);
-            // let stopDoRandomEvents = doRandomEvents();
+            let stopDoRandomEvents = doRandomEvents();
             setTimeout(async function () {
                 clearInterval(stopTimerId);
-                // clearInterval(stopDoRandomEvents);
+                clearInterval(stopDoRandomEvents);
                 // классификация страницы
                 let testData = [createCurPageSample(undefined, window.location.href)];
                 pageDataset.setData(message.pageSamples, testData);

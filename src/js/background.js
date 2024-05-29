@@ -1,17 +1,18 @@
 try {
-   importScripts('./backgroundStorage.js', './Extractor.js', './Heap.js', './Tab.js');
+    importScripts('./backgroundStorage.js',
+        './Extractor.js', './Heap.js',
+        './Tab.js', './ExtractorDB.js',
+        './CollectorDB.js', './PageSampleDB.js');
 } catch (e) {
-   console.error(e);
+    console.error(e);
 }
 
 class TaskManager {
     constructor() {
         this.tasks = [];
-        let webExtractorDB = null;
-        let extractor = {};
-        let dataForDownload = [];
-        let isStoppedExtract = false;
-        let titles = ["Стартовая страница"];
+        this.extractor = {};
+        this.dataForDownload = [];
+        this.titles = ["Стартовая страница"];
     }
 
     addTask(task) {
@@ -19,338 +20,315 @@ class TaskManager {
         task.start();
     }
 
+    getTaskById(taskId) {
+        const task = this.tasks.find(task => task.getTaskId().toString() === taskId);
+        if (task) {
+            console.log('getTaskById');
+        }
+        return task;
+    }
+
     async handleRequest(request, sendResponse) {
-        switch(request.message) {
-            case 'saveExtractor':
-                webExtractorDB.setExtractor(request.extractor)
-                    .then((res) => {
-                        extractor = request.extractor;
-                        extractor.extractorName = res;
-                        console.log("saveExtractor ok 29");
-                    });
-                sendResponse({"message": "ok"});
-                break;
+        try {
+            switch (request.message) {
+                case 'saveExtractor':
+                    this.extractor = await ExtractorDB.saveExtractor(request.extractor);
+                    sendResponse({"message": "saveExtractor"});
+                    break;
 
-            case 'getExtractors':
-                webExtractorDB.getExtractors()
-                    .then(res => {
-                        console.log("getExtractors ok 37");
-                        sendResponse({'extractors': res});
-                    })
-                break;
+                case 'getExtractors':
+                    let extractors = await ExtractorDB.getAllExtractors();
+                    sendResponse({extractors: extractors});
+                    break;
 
-            case 'makeExtractorCurrent':
-                webExtractorDB.getExtractor(request.extractorName)
-                    .then((res) => {
-                        console.log("makeExtractorCurrent ok 45");
-                        extractor.extractorName = request.extractorName;
-                        extractor.extractorStartUrl = res.extractorStartUrl;
-                    });
-                sendResponse({"my":"yuou"});
-                break;
+                case 'makeExtractorCurrent':
+                    this.extractor = await ExtractorDB.getExtractor(request.extractorName);
+                    sendResponse({"message": "makeExtractorCurrent"});
+                    break;
 
-            case 'saveCollector':
-                webExtractorDB.setCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
-                    .then(res => {
-                        console.log('SaveCollector(msg) setCollector(webExtractorDB) ' + res);
-                    });
-                break;
-
-            case 'putCollector':
-                webExtractorDB.putCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
-                    .then(res => {
-                        console.log('putCollector(msg) putCollector(webExtractorDB) ' + res);
-                    });
-                break;
-
-            case 'savePageSample':
-                webExtractorDB.setPageSample(Object.assign(request.pageSample, {'extractorName': extractor.extractorName}))
-                    .then(res => {
-                        console.log('putCollector(msg) setPageSample(webExtractorDB) ' + res);
-                    });
-                sendResponse({"my":"yuou"});
-                console.log("Page Sample background " + request.pageSample);
-                break;
-
-            case 'getPageSamplesByExtractor':
-                webExtractorDB.getPageSamplesByExtractor(extractor.extractorName)
-                    .then((res) => {
-                        console.log("getPageSamplesByExtractor ok 78");
-                        sendResponse({message: "pageSamples", pageSamples: res});
-                    })
-                break;
-
-            case 'download':
-                isStoppedExtract  = isStoppedExtract !== true;
-                if (dataForDownload.length > 0) {
-                    let formattedData;
-                    switch (request.format) {
-                        case 'csv':
-                            formattedData = saveToCSV(titles, dataForDownload, request.notIncludeColumns);
-                            break;
-                        case 'json':
-                            formattedData = saveToJSON(titles, dataForDownload, request.notIncludeColumns);
-                            break;
+                case 'saveCollector':
+                    if (this.extractor.extractorName) {
+                        let response = await CollectorDB.saveCollector(request.collector, {'extractorName': this.extractor.extractorName});
+                        console.log('SaveCollector(msg) setCollector(webExtractorDB) ' + response);
+                        sendResponse({'message': 'ok'});
+                    } else {
+                        sendResponse({'message': 'bad'});
+                        console.error('saveCollector: extractorName is ' + this.extractor.extractorName);
                     }
-                    sendResponse({message: 'ok', formattedData: formattedData, extractorName: extractor.extractorName});
-                    console.log("download ok 96");
-                } else {
-                    sendResponse({message: 'empty'});
-                    console.error("download empty 99");
-                }
-                break;
+                    break;
 
-            case 'extract':
-                extractData(extractor.extractorName, [extractor.extractorStartUrl])
-                    .then(data => sendResponse({ message: "ok", useData: data }))
-                    .catch(err => {
-                        sendResponse({ message: "error", error: err.toString() });
-                        console.log(err);
-                    });
-                break;
-            default:
-                console.error("Unknown message type:", request.message);
-                sendResponse({ message: "error", error: "Unknown message type" });
+                case 'putCollector':
+                    if (this.extractor.extractorName) {
+                        let response = await CollectorDB.putCollector(request.collector, {'extractorName': this.extractor.extractorName});
+                        console.log('putCollector(msg) putCollector(webExtractorDB) ' + response);
+                        sendResponse({'message': 'ok'});
+                    } else {
+                        sendResponse({'message': 'bad'});
+                        console.error('saveCollector: extractorName is ' + this.extractor.extractorName);
+                    }
+                    break;
+
+                case 'savePageSample':
+                    if (this.extractor.extractorName) {
+                        let response = await PageSampleDB.savePageSample(request.pageSample, {'extractorName': this.extractor.extractorName});
+                        console.log('savePageSample(msg) savePageSample(webExtractorDB) ' + response);
+                        sendResponse({'message': 'ok'});
+                    } else {
+                        sendResponse({'message': 'bad'});
+                        console.error('savePageSample: extractorName is ' + this.extractor.extractorName);
+                    }
+                    break;
+
+                case 'getPageSamplesByExtractor':
+                    if (this.extractor.extractorName) {
+                        let response = await PageSampleDB.getPageSamplesByExtractor(this.extractor.extractorName);
+                        console.log('getPageSamplesByExtractor(msg) getPageSamplesByExtractor(webExtractorDB) ' + response);
+                        sendResponse({message: "pageSamples", pageSamples: response});
+                    } else {
+                        sendResponse({message: 'pageSamples', pageSamples: []});
+                    }
+                    break;
+                case 'getTasks':
+                    let tasksDTO = [];
+                    this.tasks.forEach((task) => {
+                        tasksDTO.push({
+                            extractorName: task.extractorName,
+                            urls: task.urls,
+                            taskId: task.getTaskId()
+                        });
+                    })
+                    sendResponse({'message': 'tasks', tasksDTO: tasksDTO});
+                    break;
+                case 'download':
+                    await this.handleDownload(request, sendResponse);
+                    break;
+
+                case 'extract':
+                    await this.handleExtract(sendResponse);
+                    break;
+                case 'stopExtract':
+                    await this.handleStopExtract(request, sendResponse);
+                    break;
+                default:
+                    console.error("Unknown message type:", request.message);
+                    sendResponse({message: "error", error: "Unknown message type"});
+            }
+        } catch (err) {
+            console.log('Handle error ' + err);
         }
     }
+
+    async handleDownload(request, sendResponse) {
+        let downloadTask = this.getTaskById(request.taskId);
+        let dataForDownload = await downloadTask.getDataForDownload();
+        if (dataForDownload.length > 0) {
+            let formattedData;
+            switch (request.format) {
+                case 'csv':
+                    formattedData = saveToCSV(downloadTask.titles, dataForDownload, request.notIncludeColumns);
+                    break;
+                case 'json':
+                    formattedData = saveToJSON(downloadTask.titles, dataForDownload, request.notIncludeColumns);
+                    break;
+            }
+            sendResponse({message: 'ok', formattedData: formattedData, extractorName: downloadTask.extractorName});
+            console.log("download ok 96");
+        } else {
+            sendResponse({message: 'empty'});
+            console.error("download empty 99");
+        }
+    }
+
+    async handleExtract(sendResponse) {
+        const task = new ExtractTask(this.extractor.extractorName, [this.extractor.extractorStartUrl]);
+        this.addTask(task);
+        console.log('handleExtract: id = ' + task.id + 'name = ' + this.extractor.extractorName);
+        sendResponse({ message: "ok", taskId: task.id });
+    }
+
+    async handleStopExtract(request, sendResponse) {
+        let stopTask = this.getTaskById(request.taskId);
+        stopTask.isStoppedExtract = true;
+        console.log('handleStopExtract: id = ' + stopTask.id + 'name = ' + stopTask.extractorName);
+        sendResponse({ message: "stopOk"});
+    }
+
 }
 
-let webExtractorDB = null;
-let extractor = {};
-let dataForDownload = [];
-let isStoppedExtract = false;
-let titles = ["Стартовая страница"];
 
-(function initIndexedDB() {
-    webExtractorDB = new IndexedDBStorage();
-})();
+class ExtractTask {
+    constructor(extractorName, urls, taskManager) {
+        this.extractorName = extractorName;
+        this.urls = urls;
+        this.taskManager = taskManager;
+        this.id = Date.now();
+        this.dataForDownload = [];
+        this.isStoppedExtract = false;
+        this.titles = ["Стартовая страница"];
+    }
+
+    async start() {
+        await this.extractData();
+        this.isStoppedExtract = false;
+    }
+
+    async stop() {
+        this.isStoppedExtract = true;
+    }
+
+    async getDataForDownload() {
+        return this.dataForDownload;
+    }
+
+    getTaskId() {
+        return this.id;
+    }
+
+    // проход по ссылкам
+    // определение класса страницы и получение схожей страницы
+    // получаем коллекторы по странице
+    // собираем данные со страницы используя коллекторы
+    // инициализация кучи, объекты в куче имеют вид {...: ..., priority: priority}
+    async extractData() {
+        try {
+            let priorityQueue = new Heap();
+            priorityQueue.lessThan = (a, b) => a.priority < b.priority;
+            let priority = 0;
+            let urlsPrior = [];
+            this.urls.forEach((url) => {
+                urlsPrior.push({priority: priority, data: url, type: 'link'});
+            });
+            priorityQueue.addElems(urlsPrior);
+
+            let extractor = await ExtractorDB.getExtractor(this.extractorName);
+            let [pageSamples, collectors] = await getDataByExtractor(extractor);
+
+            let tab = new Tab();
+            await tab.createTab(this.urls[0], 3000);
+
+            let currentData = [];
+            let lastPrior = 0;
+            let scrapedElementCount = 0;
+            while (!priorityQueue.isEmpty() && !this.isStoppedExtract) {
+                let current = priorityQueue.pop();
+                scrapedElementCount++;
+
+                if (current.type === 'link' || current.type === 'pagination_link') {
+                    await this.handleLinkOrPaginationLink(current, tab, pageSamples, collectors, priorityQueue);
+                }
+
+                if (lastPrior !== 0 && current.priority === 2) {
+                    this.dataForDownload.push([...currentData]);
+                    currentData.length = 0;
+                }
+
+                currentData.push(current.data);
+                lastPrior = current.priority;
+                console.log('Scraped element count: ' + scrapedElementCount);
+            }
+        } catch (err) {
+            console.error("Error: {extractData}", err);
+        }
+    }
+
+    async  handleLinkOrPaginationLink(current, tab, pageSamples, collectors, priorityQueue) {
+        await tab.goToUrl(current.data);
+        let response = await tab.sendMessageToTab({
+            message: "extractData",
+            pageSamples: pageSamples,
+            collectors: collectors
+        });
+
+        if (response.message === "ok") {
+            this.processResponseOk(response, current, priorityQueue);
+        } else if (response.message === "update") {
+            await this.updateCollectorAndPageSample(response, collectors, pageSamples);
+        } else if (response.message === "singleElemCollectorUpdate") {
+            await this.updateSingleElemCollector(response, current, priorityQueue, collectors);
+        } else if (response.message === "continue") {
+            // Continue with the next item
+        } else {
+            console.log(response.message);
+        }
+    }
+
+    processResponseOk(response, current, priorityQueue) {
+        let priority = current.priority+1;
+        let priorityElems = [];
+        let basePriority = priority;
+
+        response.useData.forEach(item => {
+            let currentPriority = item.type === 'pagination_link' ? basePriority : priority+1;
+            priority++;
+            item.data.forEach(elem => {
+                priorityElems.push({priority: currentPriority, data: elem, type: item.type});
+            });
+            if (!this.titles.includes(item.name)) {
+                this.titles.push(item.name);
+            }
+        });
+
+        priorityQueue.addElems(priorityElems);
+    }
+
+    async  updateCollectorAndPageSample(response, collectors, pageSamples) {
+        await CollectorDB.saveCollector(Object.assign(response.collector, {'extractorName': this.extractorName}));
+        await PageSampleDB.savePageSample(Object.assign(response.pageSample, {'extractorName': this.extractorName}));
+
+        collectors.push(Object.assign(response.collector, {'extractorName': this.extractorName}));
+        pageSamples.push(Object.assign(response.pageSample, {'extractorName': this.extractorName}));
+    }
+
+    async  updateSingleElemCollector(response, current, priorityQueue, collectors) {
+        let priority = current.priority;
+        let priorityElems = [];
+        let basePriority = ++priority;
+
+        response.useData.forEach(item => {
+            let currentPriority = item.type === 'pagination_link' ? basePriority : ++priority;
+            item.data.forEach(elem => {
+                priorityElems.push({priority: currentPriority, data: elem, type: item.type});
+            });
+            if (!this.titles.includes(item.name)) {
+                this.titles.push(item.name);
+            }
+        });
+
+        priorityQueue.addElems(priorityElems);
+
+        response.collectors.forEach(collector => {
+            CollectorDB.putCollector(Object.assign(collector, {'extractorName': this.extractorName}));
+            collectors.forEach((col, index) => {
+                if (col.collectorName === collector.collectorName && col.pageSampleName === collector.pageSampleName) {
+                    collectors[index] = collector;
+                }
+            });
+        });
+    }
+
+}
+
+const taskManager = new TaskManager();
 
 chrome.runtime.onInstalled.addListener(() => {
-    webExtractorDB.connectDB(console.log);
+    new IndexedDBStorage().connectDB(console.log);
 });
-
-
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-   switch(request.message) {
-      case 'saveExtractor':
-          webExtractorDB.setExtractor(request.extractor)
-             .then((res) => {
-                  extractor = request.extractor;
-                  extractor.extractorName = res;
-                  console.log("saveExtractor ok 29");
-            });
-          sendResponse({"message": "ok"});
-         break;
-
-       case 'getExtractors':
-           webExtractorDB.getExtractors()
-               .then(res => {
-                   console.log("getExtractors ok 37");
-                   sendResponse({'extractors': res});
-               })
-           break;
-
-       case 'makeExtractorCurrent':
-           webExtractorDB.getExtractor(request.extractorName)
-               .then((res) => {
-                   console.log("makeExtractorCurrent ok 45");
-                   extractor.extractorName = request.extractorName;
-                   extractor.extractorStartUrl = res.extractorStartUrl;
-               });
-           sendResponse({"my":"yuou"});
-           break;
-
-       case 'saveCollector':
-           webExtractorDB.setCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
-               .then(res => {
-                    console.log('SaveCollector(msg) setCollector(webExtractorDB) ' + res);
-               });
-         break;
-
-      case 'putCollector':
-          webExtractorDB.putCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
-              .then(res => {
-                  console.log('putCollector(msg) putCollector(webExtractorDB) ' + res);
-              });
-          break;
-
-       case 'savePageSample':
-           webExtractorDB.setPageSample(Object.assign(request.pageSample, {'extractorName': extractor.extractorName}))
-               .then(res => {
-                   console.log('putCollector(msg) setPageSample(webExtractorDB) ' + res);
-               });
-           sendResponse({"my":"yuou"});
-           console.log("Page Sample background " + request.pageSample);
-           break;
-
-       case 'getPageSamplesByExtractor':
-           webExtractorDB.getPageSamplesByExtractor(extractor.extractorName)
-               .then((res) => {
-                   console.log("getPageSamplesByExtractor ok 78");
-                   sendResponse({message: "pageSamples", pageSamples: res});
-               })
-           break;
-
-       case 'download':
-           isStoppedExtract  = isStoppedExtract !== true;
-            if (dataForDownload.length > 0) {
-                let formattedData;
-                switch (request.format) {
-                    case 'csv':
-                        formattedData = saveToCSV(titles, dataForDownload, request.notIncludeColumns);
-                        break;
-                    case 'json':
-                        formattedData = saveToJSON(titles, dataForDownload, request.notIncludeColumns);
-                        break;
-                }
-                sendResponse({message: 'ok', formattedData: formattedData, extractorName: extractor.extractorName});
-                console.log("download ok 96");
-            } else {
-                sendResponse({message: 'empty'});
-                console.error("download empty 99");
-            }
-           break;
-
-       case 'extract':
-           extractData(extractor.extractorName, [extractor.extractorStartUrl])
-               .then(data => sendResponse({ message: "ok", useData: data }))
-               .catch(err => {
-                   sendResponse({ message: "error", error: err.toString() });
-                   console.log(err);
-               });
-           console.log("extractorName " + extractor);
-           console.log("extract ok 111 ");
-           return true;
-   }
-   return true;
+    taskManager.handleRequest(request, sendResponse).catch(error => {
+        console.error("Error handling message:", error);
+        sendResponse({message: "error", error: error.toString()});
+    });
+    return true;
 });
 
-
-
-async function extractData(extractorName, urls) {
-    // проход по ссылкам
-        // определение класса страницы и получение схожей страницы
-        // получаем коллекторы по странице
-        // собираем данные со страницы используя коллекторы
-    // инициализация кучи, объекты в куче имеют вид {...: ..., priority: priority}
-    try {
-        let priorityQueue = new Heap();
-        let priority = 0;
-        let urlsPrior = [];
-        urls.forEach((url) => {
-            urlsPrior.push({priority: priority, data: url, type: 'link'});
-        });
-        // Переопределение функции для сравнения(так что макс. элемент извлекается первее)
-        priorityQueue.lessThan = (a, b) => a.priority < b.priority;
-        priorityQueue.addElems(urlsPrior);
-
-        // получение данных о сборщике с бд и сущностей связанных с полученным сборщиком
-        let extractor = await webExtractorDB.getExtractor(extractorName);
-        let [pageSamples, collectors] = await getDataByExtractor(extractor);
-
-        // создание вкладки
-        if (urls[0] === undefined) {
-            console.error("arr 'urls' is empty");
-        }
-
-        let tab = new Tab();
-        await tab.createTabFullLoad(urls[0]);
-
-        // проход по очереди с приоритетом
-        let currentData = [];
-        let lastPrior = 0;
-        let rowCount = 0;
-        while (!priorityQueue.isEmpty() && !isStoppedExtract) {
-            let current = priorityQueue.pop();
-
-            if (current.type === 'link' || current.type === 'pagination_link') {
-                await tab.goToUrl(current.data);
-                let response = await tab.sendMessageToTab({
-                    message: "extractData",
-                    pageSamples: pageSamples,
-                    collectors: collectors
-                });
-                console.log("ResponseMessage = " + response.message);
-                console.log("ResponseUseData = " + response.useData);
-                priority = current.priority;
-                if (response.message === "ok") {
-                    let priorityElems = [];
-                    let basePriority = ++priority;
-
-                    for (let i = 0; i < response.useData.length; ++i) {
-                        let item = response.useData[i];
-                        let currentPriority = item.type === 'pagination_link' ? basePriority : ++priority;
-
-                        item.data.forEach((elem) => {
-                            priorityElems.push({priority: currentPriority, data: elem, type: item.type});
-                        });
-
-                        if (!titles.includes(item.name)) {
-                            titles.push(item.name);
-                        }
-                    }
-
-                    priorityQueue.addElems(priorityElems);
-                } else if (response.message === "update") {
-                    webExtractorDB.setCollector(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
-                    webExtractorDB.setPageSample(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
-                    webExtractorDB.collectors.push(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
-                    webExtractorDB.pageSamples.push(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
-                } else if (response.message === "singleElemCollectorUpdate") {
-                    let priorityElems = [];
-                    let basePriority = ++priority;
-
-                    for (let i = 0; i < response.useData.length; ++i) {
-                        let item = response.useData[i];
-                        let currentPriority = item.type === 'pagination_link' ? basePriority : ++priority;
-
-                        item.data.forEach((elem) => {
-                            priorityElems.push({priority: currentPriority, data: elem, type: item.type});
-                        });
-
-                        if (!titles.includes(item.name)) {
-                            titles.push(item.name);
-                        }
-                    }
-                    priorityQueue.addElems(priorityElems);
-                    response.collectors.forEach(collector => {
-                        putCollector(Object.assign(collector, {'extractorName': extractor.extractorName}));
-                        for (let i = 0; i < collectors.length; ++i) {
-                            if (collectors[i].collectorName === collector.collectorName &&
-                                collectors[i].pageSampleName === collector.pageSampleName) {
-                                collectors[i] = collector;
-                            }
-                        }
-                    });
-                } else if (response.message === "continue") {
-                    continue;
-                } else {
-                    console.log(response.message);
-                }
-            }
-
-            if (lastPrior !== 0 && current.priority === 2) {
-                dataForDownload.push([...currentData]);
-                currentData.length = 0;
-                rowCount++;
-            }
-            console.log(current);
-            currentData[current.priority] = current.data;
-            lastPrior = current.priority;
-            console.log(priorityQueue);
-        }
-    } catch (err) {
-        console.error("Error: {extractData}", err);
-    }
-}
 
 async function getDataByExtractor(extractor) {
     let extractorName = extractor.extractorName;
     try {
         let requestsDB = [
-            await  webExtractorDB.getPageSamplesByExtractor(extractorName),
-            await  webExtractorDB.getCollectorsByExtractor(extractorName)
+            await PageSampleDB.getPageSamplesByExtractor(extractorName),
+            await CollectorDB.getCollectorsByExtractor(extractorName)
         ];
         return await Promise.all(requestsDB);
     } catch (err) {

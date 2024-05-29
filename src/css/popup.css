@@ -149,3 +149,6 @@ input:checked + .slider:before {
 #collectors_table tr:nth-child(even) td {
     background-color: #f9f9f9;
 }
+
+#tasksSelect {
+}

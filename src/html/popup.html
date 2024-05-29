@@ -13,6 +13,13 @@
         <button id="select-data-start" class="popup_btn">Извлечение</button>
         <button id="select-data-stop" class="popup_btn">Скачать данные</button>
     </div>
+    <div>
+        <label class="select">
+            <select id="tasksSelect">
+                <option selected disabled>Выберите сбор данных</option>
+            </select>
+        </label>
+    </div>
     <div class="settings">
         <div class="setting_item">
             <label class="switch">
@@ -24,18 +31,6 @@
             </span>
         </div>
         <div class="setting_item">
-            <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div class="setting_item">
-            <label class="switch">
-                <input type="checkbox">
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div class="setting_item">
             <span class="setting_item_label">
                 Формат для скачивания
             </span>
@@ -45,7 +40,6 @@
                     <option value="json">JSON</option>
                 </select>
             </label>
-
         </div>
     </div>
 </body>

@@ -6,6 +6,9 @@ class Tab {
 
     // возвращает таб из tabApi
     async createTabFullLoad(url) {
+        if (!url) {
+            throw new Error('URL is undefined or invalid');
+        }
         const tabLoadingTrap = { tabId: undefined, resolve: undefined };
 
         chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
@@ -33,7 +36,9 @@ class Tab {
 
     async createTab(url, loadTime) {
         this.browserTab = await chrome.tabs.create({ url });
-        await setTimeout(() => {}, loadTime);
+        await new Promise(resolve => setTimeout(() => {
+            resolve();
+        }, loadTime));
         return this;
     }
 

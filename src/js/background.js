@@ -1,40 +1,160 @@
 try {
-   importScripts('./backgroundStorage.js', './Extractor.js', './Heap.js');
+   importScripts('./backgroundStorage.js', './Extractor.js', './Heap.js', './Tab.js');
 } catch (e) {
    console.error(e);
 }
-chrome.runtime.onInstalled.addListener(() => {
-   connectDB(console.log);
-});
 
-let isStoppedExtract = false;
+class TaskManager {
+    constructor() {
+        this.tasks = [];
+        let webExtractorDB = null;
+        let extractor = {};
+        let dataForDownload = [];
+        let isStoppedExtract = false;
+        let titles = ["Стартовая страница"];
+    }
 
+    addTask(task) {
+        this.tasks.push(task);
+        task.start();
+    }
+
+    async handleRequest(request, sendResponse) {
+        switch(request.message) {
+            case 'saveExtractor':
+                webExtractorDB.setExtractor(request.extractor)
+                    .then((res) => {
+                        extractor = request.extractor;
+                        extractor.extractorName = res;
+                        console.log("saveExtractor ok 29");
+                    });
+                sendResponse({"message": "ok"});
+                break;
+
+            case 'getExtractors':
+                webExtractorDB.getExtractors()
+                    .then(res => {
+                        console.log("getExtractors ok 37");
+                        sendResponse({'extractors': res});
+                    })
+                break;
+
+            case 'makeExtractorCurrent':
+                webExtractorDB.getExtractor(request.extractorName)
+                    .then((res) => {
+                        console.log("makeExtractorCurrent ok 45");
+                        extractor.extractorName = request.extractorName;
+                        extractor.extractorStartUrl = res.extractorStartUrl;
+                    });
+                sendResponse({"my":"yuou"});
+                break;
+
+            case 'saveCollector':
+                webExtractorDB.setCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
+                    .then(res => {
+                        console.log('SaveCollector(msg) setCollector(webExtractorDB) ' + res);
+                    });
+                break;
+
+            case 'putCollector':
+                webExtractorDB.putCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
+                    .then(res => {
+                        console.log('putCollector(msg) putCollector(webExtractorDB) ' + res);
+                    });
+                break;
+
+            case 'savePageSample':
+                webExtractorDB.setPageSample(Object.assign(request.pageSample, {'extractorName': extractor.extractorName}))
+                    .then(res => {
+                        console.log('putCollector(msg) setPageSample(webExtractorDB) ' + res);
+                    });
+                sendResponse({"my":"yuou"});
+                console.log("Page Sample background " + request.pageSample);
+                break;
+
+            case 'getPageSamplesByExtractor':
+                webExtractorDB.getPageSamplesByExtractor(extractor.extractorName)
+                    .then((res) => {
+                        console.log("getPageSamplesByExtractor ok 78");
+                        sendResponse({message: "pageSamples", pageSamples: res});
+                    })
+                break;
+
+            case 'download':
+                isStoppedExtract  = isStoppedExtract !== true;
+                if (dataForDownload.length > 0) {
+                    let formattedData;
+                    switch (request.format) {
+                        case 'csv':
+                            formattedData = saveToCSV(titles, dataForDownload, request.notIncludeColumns);
+                            break;
+                        case 'json':
+                            formattedData = saveToJSON(titles, dataForDownload, request.notIncludeColumns);
+                            break;
+                    }
+                    sendResponse({message: 'ok', formattedData: formattedData, extractorName: extractor.extractorName});
+                    console.log("download ok 96");
+                } else {
+                    sendResponse({message: 'empty'});
+                    console.error("download empty 99");
+                }
+                break;
+
+            case 'extract':
+                extractData(extractor.extractorName, [extractor.extractorStartUrl])
+                    .then(data => sendResponse({ message: "ok", useData: data }))
+                    .catch(err => {
+                        sendResponse({ message: "error", error: err.toString() });
+                        console.log(err);
+                    });
+                break;
+            default:
+                console.error("Unknown message type:", request.message);
+                sendResponse({ message: "error", error: "Unknown message type" });
+        }
+    }
+}
+
+let webExtractorDB = null;
 let extractor = {};
 let dataForDownload = [];
+let isStoppedExtract = false;
 let titles = ["Стартовая страница"];
+
+(function initIndexedDB() {
+    webExtractorDB = new IndexedDBStorage();
+})();
+
+chrome.runtime.onInstalled.addListener(() => {
+    webExtractorDB.connectDB(console.log);
+});
+
+
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log("BACKGROUND MSG");
-    console.log(request.message);
    switch(request.message) {
       case 'saveExtractor':
-         setExtractor(request.extractor)
+          webExtractorDB.setExtractor(request.extractor)
              .then((res) => {
                   extractor = request.extractor;
                   extractor.extractorName = res;
+                  console.log("saveExtractor ok 29");
             });
           sendResponse({"message": "ok"});
          break;
 
        case 'getExtractors':
-           getExtractors()
+           webExtractorDB.getExtractors()
                .then(res => {
+                   console.log("getExtractors ok 37");
                    sendResponse({'extractors': res});
                })
            break;
 
        case 'makeExtractorCurrent':
-           getExtractor(request.extractorName)
+           webExtractorDB.getExtractor(request.extractorName)
                .then((res) => {
+                   console.log("makeExtractorCurrent ok 45");
                    extractor.extractorName = request.extractorName;
                    extractor.extractorStartUrl = res.extractorStartUrl;
                });
@@ -42,22 +162,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
            break;
 
        case 'saveCollector':
-         setCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}));
+           webExtractorDB.setCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
+               .then(res => {
+                    console.log('SaveCollector(msg) setCollector(webExtractorDB) ' + res);
+               });
          break;
 
       case 'putCollector':
-          putCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}));
+          webExtractorDB.putCollector(Object.assign(request.collector, {'extractorName': extractor.extractorName}))
+              .then(res => {
+                  console.log('putCollector(msg) putCollector(webExtractorDB) ' + res);
+              });
           break;
 
        case 'savePageSample':
-           setPageSample(Object.assign(request.pageSample, {'extractorName': extractor.extractorName}));
+           webExtractorDB.setPageSample(Object.assign(request.pageSample, {'extractorName': extractor.extractorName}))
+               .then(res => {
+                   console.log('putCollector(msg) setPageSample(webExtractorDB) ' + res);
+               });
            sendResponse({"my":"yuou"});
            console.log("Page Sample background " + request.pageSample);
            break;
 
        case 'getPageSamplesByExtractor':
-           getPageSamplesByExtractor(extractor.extractorName)
+           webExtractorDB.getPageSamplesByExtractor(extractor.extractorName)
                .then((res) => {
+                   console.log("getPageSamplesByExtractor ok 78");
                    sendResponse({message: "pageSamples", pageSamples: res});
                })
            break;
@@ -75,8 +205,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         break;
                 }
                 sendResponse({message: 'ok', formattedData: formattedData, extractorName: extractor.extractorName});
+                console.log("download ok 96");
             } else {
                 sendResponse({message: 'empty'});
+                console.error("download empty 99");
             }
            break;
 
@@ -87,11 +219,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                    sendResponse({ message: "error", error: err.toString() });
                    console.log(err);
                });
-           console.log("extractorName " + extractor.extractorStartUrl);
+           console.log("extractorName " + extractor);
+           console.log("extract ok 111 ");
            return true;
    }
    return true;
 });
+
 
 
 async function extractData(extractorName, urls) {
@@ -107,19 +241,21 @@ async function extractData(extractorName, urls) {
         urls.forEach((url) => {
             urlsPrior.push({priority: priority, data: url, type: 'link'});
         });
-        // переопрделение функции для сравнения(так что макс. элемент извлекается первее)
+        // Переопределение функции для сравнения(так что макс. элемент извлекается первее)
         priorityQueue.lessThan = (a, b) => a.priority < b.priority;
         priorityQueue.addElems(urlsPrior);
 
         // получение данных о сборщике с бд и сущностей связанных с полученным сборщиком
-        let extractor = await getExtractor(extractorName);
+        let extractor = await webExtractorDB.getExtractor(extractorName);
         let [pageSamples, collectors] = await getDataByExtractor(extractor);
 
         // создание вкладки
         if (urls[0] === undefined) {
             console.error("arr 'urls' is empty");
         }
-        let tab = await createTab(urls[0]);
+
+        let tab = new Tab();
+        await tab.createTabFullLoad(urls[0]);
 
         // проход по очереди с приоритетом
         let currentData = [];
@@ -129,14 +265,14 @@ async function extractData(extractorName, urls) {
             let current = priorityQueue.pop();
 
             if (current.type === 'link' || current.type === 'pagination_link') {
-                await goToUrl(tab, current.data);
-                let response = await chrome.tabs.sendMessage(tab.id, {
+                await tab.goToUrl(current.data);
+                let response = await tab.sendMessageToTab({
                     message: "extractData",
                     pageSamples: pageSamples,
                     collectors: collectors
                 });
-                console.log(response.message);
-                console.log(response.useData);
+                console.log("ResponseMessage = " + response.message);
+                console.log("ResponseUseData = " + response.useData);
                 priority = current.priority;
                 if (response.message === "ok") {
                     let priorityElems = [];
@@ -157,10 +293,10 @@ async function extractData(extractorName, urls) {
 
                     priorityQueue.addElems(priorityElems);
                 } else if (response.message === "update") {
-                    setCollector(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
-                    setPageSample(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
-                    collectors.push(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
-                    pageSamples.push(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
+                    webExtractorDB.setCollector(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
+                    webExtractorDB.setPageSample(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
+                    webExtractorDB.collectors.push(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
+                    webExtractorDB.pageSamples.push(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
                 } else if (response.message === "singleElemCollectorUpdate") {
                     let priorityElems = [];
                     let basePriority = ++priority;
@@ -213,8 +349,8 @@ async function getDataByExtractor(extractor) {
     let extractorName = extractor.extractorName;
     try {
         let requestsDB = [
-            await getPageSamplesByExtractor(extractorName),
-            await getCollectorsByExtractor(extractorName)
+            await  webExtractorDB.getPageSamplesByExtractor(extractorName),
+            await  webExtractorDB.getCollectorsByExtractor(extractorName)
         ];
         return await Promise.all(requestsDB);
     } catch (err) {
@@ -232,41 +368,7 @@ function endExtractNotification() {
     });
 }
 
-function goToUrl(tab, url) {
-    chrome.tabs.update(tab.id, {url});
-    return new Promise((resolve) => {
-        chrome.tabs.onUpdated.addListener(function onUpdated(tabId, info)  {
-            if (tabId === tab.id && info.status === 'complete') {
-                chrome.tabs.onUpdated.removeListener(onUpdated);
-                resolve();
-            }
-        })
-    })
-}
 
 
-async function createTab(url) {
-   const tabLoadingTrap = { tabId: undefined, resolve: undefined };
 
-   chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-      if (tabId === tabLoadingTrap.tabId && changeInfo.status === 'complete') {
 
-         tabLoadingTrap.resolve();
-
-         Object.assign(tabLoadingTrap, { tabId: undefined, resolve: undefined });
-      }
-   });
-
-    function waitForTabLoadingToComplete(tabId) {
-        tabLoadingTrap.tabId = tabId;
-        console.log("tabid" + tabId);
-
-        return new Promise((resolve) => {
-            tabLoadingTrap.resolve = resolve;
-        });
-    }
-
-   const tab = await chrome.tabs.create({ url });
-   await waitForTabLoadingToComplete(tab.id);
-   return tab;
-}

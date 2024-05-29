@@ -1,245 +1,199 @@
-const NAME_DB = "WebExtractor";
-const VERSION_DB = 1;
+class IndexedDBStorage {
+    static instance;
+    NAME_DB = "WebExtractor";
+    VERSION_DB = 1;
 
-function loger(err){
-    console.log(err);
-}
-
-
-function connectDB(func) {
-    let openRequest = indexedDB.open(NAME_DB, 1);
-
-    openRequest.onerror = loger;
-
-    openRequest.onupgradeneeded = function (event) {
-        let db = event.currentTarget.result;
-        if (!db.objectStoreNames.contains('pageSamples')) {
-            let pageSamples = db.createObjectStore('pageSamples', {
-                keyPath: ['target', 'extractorName', 'url']
-            });
-            pageSamples.createIndex('extractorName_idx', 'extractorName');
+    constructor() {
+        if (IndexedDBStorage.instance) {
+            return IndexedDBStorage.instance;
         }
-        if (!db.objectStoreNames.contains('extractors')) {
-            let extractors = db.createObjectStore('extractors', {
-                keyPath: 'extractorName'
-            });
-            // extractors.createIndex('extractorName_idx', 'extractorName', {unique: false});
-        }
-        if (!db.objectStoreNames.contains('collectors')) {
-            let collectors = db.createObjectStore('collectors', {
-                keyPath: ['collectorName', 'extractorName']
-            });
-            collectors.createIndex('extractorName_idx', 'extractorName');
-        }
-
-        connectDB(func);
+        IndexedDBStorage.instance = this;
     }
 
-    openRequest.onsuccess = function (event) {
-        let db = openRequest.result;
-
-        db.onversionchange = function () {
-            db.close();
-            alert("База данных устарела, перезагрузите страницу.");
-        }
-
-        return func(db);
+    loger(err) {
+        console.log(err);
     }
-}
 
-function setCollector(collector) {
-    return new Promise((resolve, reject) => {
-        connectDB(function (db) {
-            let request =
-                db.transaction('collectors', 'readwrite').objectStore('collectors').add(collector);
-            request.onerror = loger;
-            request.onsuccess = function () {
-                return resolve(request.result);
+
+    connectDB(func) {
+        let openRequest = indexedDB.open(this.NAME_DB, 1);
+
+        openRequest.onerror = this.loger;
+
+        openRequest.onupgradeneeded =  (event)  => {
+            let db = event.currentTarget.result;
+            if (!db.objectStoreNames.contains('pageSamples')) {
+                let pageSamples = db.createObjectStore('pageSamples', {
+                    keyPath: ['target', 'extractorName', 'url']
+                });
+                pageSamples.createIndex('extractorName_idx', 'extractorName');
             }
-        });
-    });
-}
-
-function putCollector(collector) {
-    console.log(collector);
-    return new Promise((resolve, reject) => {
-        connectDB(function (db) {
-            let request =
-                db.transaction('collectors', 'readwrite').objectStore('collectors').put(collector);
-            request.onerror = loger;
-            request.onsuccess = function () {
-                return resolve(request.result);
+            if (!db.objectStoreNames.contains('extractors')) {
+                let extractors = db.createObjectStore('extractors', {
+                    keyPath: 'extractorName'
+                });
+                // extractors.createIndex('extractorName_idx', 'extractorName', {unique: false});
             }
-        });
-    });
-}
+            if (!db.objectStoreNames.contains('collectors')) {
+                let collectors = db.createObjectStore('collectors', {
+                    keyPath: ['collectorName', 'extractorName']
+                });
+                collectors.createIndex('extractorName_idx', 'extractorName');
+            }
 
-function setDomain(domain) {
-    return connectDB(function (db) {
-        let request =
-            db.transaction('domains', 'readwrite').objectStore('domains').add(domain);
-        request.onerror = loger;
-        request.onsuccess = function () {
-            return request.result;
+            this.connectDB(func);
         }
-    });
-}
 
-function setExtractor(extractor) {
-    return new Promise((resolve, reject) => {
-        connectDB(function (db) {
+        openRequest.onsuccess =  (event) => {
+            let db = openRequest.result;
+
+            db.onversionchange = function () {
+                db.close();
+                alert("База данных устарела, перезагрузите страницу.");
+            }
+
+            return func(db);
+        }
+    }
+
+
+    setCollector(collector) {
+        return new Promise((resolve, reject) => {
+            this.connectDB( (db) => {
+                let request =
+                    db.transaction('collectors', 'readwrite').objectStore('collectors').add(collector);
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    return resolve(request.result);
+                }
+            });
+        });
+    }
+
+    putCollector(collector) {
+        console.log(collector);
+        return new Promise((resolve, reject) => {
+            this.connectDB(function (db) {
+                let request =
+                    db.transaction('collectors', 'readwrite').objectStore('collectors').put(collector);
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    return resolve(request.result);
+                }
+            });
+        });
+    }
+
+
+    setExtractor(extractor) {
+        return new Promise((resolve, reject) => {
+            this.connectDB((db) => {
+                let request =
+                    db.transaction('extractors', 'readwrite').objectStore('extractors').add(extractor);
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    return resolve(request.result);
+                }
+            });
+        });
+    }
+
+
+
+    setPageSample(pageSample) {
+        console.log(pageSample);
+        return new Promise((resolve, reject) => {
+            this.connectDB((db) => {
+                let request =
+                    db.transaction('pageSamples', 'readwrite')
+                        .objectStore('pageSamples')
+                        .add(pageSample);
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    return resolve(request.result);
+                }
+            });
+        });
+    }
+
+
+    getPageSamplesByExtractor(extractorName) {
+        return new Promise((resolve, reject) => {
+            this.connectDB((db) => {
+                let request =
+                    db.transaction('pageSamples', "readonly")
+                        .objectStore('pageSamples')
+                        .index('extractorName_idx')
+                        .getAll(extractorName);
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    resolve(request.result ? request.result : -1);
+                }
+            });
+        });
+    }
+
+
+
+    getCollector(collectorName, func) {
+        this.connectDB((db) => {
             let request =
-                db.transaction('extractors', 'readwrite').objectStore('extractors').add(extractor);
-            request.onerror = loger;
+                db.transaction('collectors', "readonly").objectStore('collectors').get(collectorName);
+            request.onerror = this.loger;
             request.onsuccess = function () {
-                return resolve(request.result);
+                func(request.result ? request.result : -1);
             }
         });
-    });
-}
+    }
 
-function setPageClassificator(pageClassificator) {
-    connectDB(function (db) {
-        let request =
-            db.transaction('pageClassificators', 'readwrite')
-                .objectStore('pageClassificators')
-                .add(pageClassificator);
-        request.onerror = loger;
-        request.onsuccess = function () {
-            return request.result;
-        }
-    });
-}
 
-function setPageSample(pageSample) {
-    console.log(pageSample);
-    return new Promise((resolve, reject) => {
-        connectDB(function (db) {
-            let request =
-                db.transaction('pageSamples', 'readwrite')
-                    .objectStore('pageSamples')
-                    .add(pageSample);
-            request.onerror = loger;
-            request.onsuccess = function () {
-                return resolve(request.result);
-            }
+
+    getExtractor(extractorName) {
+        return new Promise((resolve, reject) => {
+            this.connectDB((db) => {
+                let request =
+                    db.transaction('extractors', "readonly")
+                        .objectStore('extractors')
+                        .get(extractorName);
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    resolve(request.result ? request.result : -1);
+                }
+            });
+        })
+    }
+
+
+    getExtractors() {
+        return new Promise((resolve, reject) => {
+            this.connectDB((db) => {
+                let request =
+                    db.transaction('extractors', "readonly")
+                        .objectStore('extractors')
+                        .getAll();
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    resolve(request.result ? request.result : -1);
+                }
+            });
         });
-    });
-}
+    }
 
-function getPageSamplesByExtractor(extractorName) {
-    return new Promise((resolve, reject) => {
-        connectDB(function(db){
-            let request =
-                db.transaction('pageSamples', "readonly")
-                    .objectStore('pageSamples')
-                    .index('extractorName_idx')
-                    .getAll(extractorName);
-            request.onerror = loger;
-            request.onsuccess = function(){
-                resolve(request.result ? request.result : -1);
-            }
+
+    getCollectorsByExtractor(extractorName) {
+        return new Promise((resolve, reject) => {
+            this.connectDB((db) => {
+                let request =
+                    db.transaction('collectors', "readonly")
+                        .objectStore('collectors')
+                        .index('extractorName_idx')
+                        .getAll(extractorName);
+                request.onerror = this.loger;
+                request.onsuccess = function () {
+                    resolve(request.result ? request.result : -1);
+                }
+            });
         });
-    });
-}
+    }
 
-function getCollector(collectorName, func){
-    connectDB(function(db){
-        let request =
-            db.transaction('collectors', "readonly").objectStore('collectors').get(collectorName);
-        request.onerror = loger;
-        request.onsuccess = function(){
-            func(request.result ? request.result : -1);
-        }
-    });
 }
-
-function getDomain(domain_id, func){
-    connectDB(function(db){
-        let request =
-            db.transaction('collectors', "readonly").objectStore('collectors').get(domain_id);
-        request.onerror = loger;
-        request.onsuccess = function(){
-            func(request.result ? request.result : -1);
-        }
-    });
-}
-
-function getExtractor(extractorName) {
-    return new Promise((resolve, reject) => {
-        connectDB(function (db) {
-            let request =
-                db.transaction('extractors', "readonly")
-                    .objectStore('extractors')
-                    .get(extractorName);
-            request.onerror = loger;
-            request.onsuccess = function () {
-                resolve(request.result ? request.result : -1);
-            }
-        });
-    })
-}
-
-function getExtractors() {
-    return new Promise((resolve, reject) => {
-        connectDB(function(db){
-            let request =
-                db.transaction('extractors', "readonly")
-                    .objectStore('extractors')
-                    .getAll();
-            request.onerror = loger;
-            request.onsuccess = function(){
-                resolve(request.result ? request.result : -1);
-            }
-        });
-    });
-}
-
-function getExtractorByName(extractorName, func) {
-    connectDB(function(db){
-        let request =
-            db.transaction('extractors', "readonly")
-                .objectStore('extractors')
-                .index('extractorName_idx')
-                .get(extractorName);
-        request.onerror = loger;
-        request.onsuccess = function(){
-            console.log(extractorName);
-            console.log(request.result.extractor_id);
-            func(request.result ? request.result : -1);
-        }
-    });
-}
-
-function getPageClassificatorByExtractor(extractor_id) {
-    return new Promise((resolve, reject) => {
-        connectDB(function(db){
-            let request =
-                db.transaction('pageClassificators', "readonly")
-                    .objectStore('pageClassificators')
-                    .index('extractorName_idx')
-                    .get(extractor_id);
-            request.onerror = loger;
-            request.onsuccess = function(){
-                return request.result ? request.result : -1;
-            }
-        });
-    });
-}
-
-function getCollectorsByExtractor(extractorName) {
-    return new Promise((resolve, reject) => {
-        connectDB(function(db){
-            let request =
-                db.transaction('collectors', "readonly")
-                    .objectStore('collectors')
-                    .index('extractorName_idx')
-                    .getAll(extractorName);
-            request.onerror = loger;
-            request.onsuccess = function(){
-                resolve(request.result ? request.result : -1);
-            }
-        });
-    });
-}
-

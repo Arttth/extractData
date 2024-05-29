@@ -55,8 +55,4 @@ function  getPageSamples(extractorName) {
 }
 
 
-function getExtractors() {
-
-}
-
 

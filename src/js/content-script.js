@@ -5,8 +5,7 @@ let selector = {};
 let pageClassificator = new NaiveBayes();
 let pageDataset = new Dataset();
 
-let settingSkipUnmarked = false;
-let waitingTimeForLoadingPage = 3000;
+let waitingTimeForLoadingPage = 2000;
 
 let collectors = [];
 let currentCollector = {};
@@ -74,14 +73,14 @@ function createCurPageSample(pageSampleName, url) {
     sample.features = {};
     sample.target = pageSampleName;
     sample.features.depth = calculateDOMDepth(document.documentElement);
-    sample.features.avgDepth = calculateAverageNodeDepth(document.documentElement);
-    // sample.features.tagFreq = calculateTagFrequency(document.documentElement);
+    sample.features.avgDepth = Math.floor(getAverageNodeDepth(document.documentElement));
     sample.features.hasForm = findForms();
     sample.features.countImages = countImages();
     sample.features.title = document.title;
-    sample.features.countLinks = countLinks(document.documentElement);
+    // sample.features.countLinks = countLinks(document.documentElement);
     sample.features.textAmount = calculateTextAmount();
     sample.features.fontSize = getMostUsedFontSize();
+    // sample.features.h1 = document.querySelector('h1').textContent;
     sample.url = url;
     return sample;
 }
@@ -100,15 +99,15 @@ function createTimer(ms) {
     }, 1000);
 }
 
-function doRandomEvents(ms) {
-    return setInterval(function updateTimer() {
-        window.scrollTo({
-            left: 0,
-            top: document.body.scrollHeight/2,
-            behavior: 'smooth'
-        })
-    }, 2000);
-}
+// function doRandomEvents(ms) {
+//     return setInterval(function updateTimer() {
+//         window.scrollTo({
+//             left: 0,
+//             top: document.body.scrollHeight/2,
+//             behavior: 'smooth'
+//         })
+//     }, 2000);
+// }
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -123,7 +122,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             selector.stop();
             break;
         case "extractData":
-            // ожидание полной прогрузки страницы
+            // ожидание полной загрузки страницы
             let stopTimerId = createTimer(waitingTimeForLoadingPage);
             // let stopDoRandomEvents = doRandomEvents();
             setTimeout(async function () {
@@ -274,21 +273,27 @@ function getUseData(elem, type) {
         case "text":
             return elem.innerText;
         case "link":
-            let link_elem = elem;
-            if (elem.tagName === 'A') {
-                link_elem =  elem;
-            } else if ((link_elem = elem.querySelector("a")))  {
-
-            } else if ((link_elem = getAnchorElement(elem, 3))) {
-                
-            } else {
-                alert("Несоответствие типов, не может быть извлечен link")
-                return elem.innerText;
-            }
-            return link_elem.href;
+            return getLink(elem);
+        case "pagination_link":
+            return getLink(elem);
         case "img":
             return elem.src;
     }
+}
+
+function getLink(elem) {
+    let link_elem = elem;
+    if (elem.tagName === 'A') {
+        link_elem =  elem;
+    } else if ((link_elem = elem.querySelector("a")))  {
+
+    } else if ((link_elem = getAnchorElement(elem, 6))) {
+
+    } else {
+        alert("Несоответствие типов, не может быть извлечен link")
+        return elem.innerText;
+    }
+    return link_elem.href;
 }
 
 function getAnchorElement(element, maxDepth = 10) {

@@ -1,11 +1,4 @@
-///////////////////////////////////////
-// функции для преоброзования html-элемента в объкт для классификации элементо
-function getAllStyleProperties(element) {
-    const style = window.getComputedStyle(element);
-    return Array.from(style).filter(property => style.getPropertyValue(property));
-}
-
-
+// функции для преоброзования html-элемента в объeкт для классификации элемен
 function transformElemToSample(elem) {
     let sample = {};
     sample.features = {};
@@ -15,8 +8,6 @@ function transformElemToSample(elem) {
     // sample.features.countChildren = countChildren(elem);
     sample.features.parentNameClass = nameClass(elem.parentNode);
     sample.features.parentId = elem.parentNode.id;
-    //sample.features.offsetWidth = Math.floor(elem.offsetWidth/ window.innerWidth * 15);
-    //sample.features.offsetHeight = Math.floor(elem.offsetHeight/ window.innerHeight * 15);
     // sample.features.level = level(elem);
     // mvideo гарантия
     sample.features.previousElemText = getTextFromElement(elem.previousElementSibling);
@@ -143,8 +134,6 @@ function level(element) {
     return level.toString()
 }
 
-//////////////////////////////////////////////
-
 ///////////////////////////////////////
 // функции для выделения призанков из страницы для классификации страниц
 
@@ -169,44 +158,31 @@ function calculateDOMDepth(node) {
 }
 
 // Функция для вычисления средней глубины узлов в дереве DOM
-function calculateAverageNodeDepth(node, depth = 0, count = 0) {
-    if (!node || !node.children || node.children.length === 0) {
-        // Если узел не существует или у него нет дочерних элементов, возвращаем 0
+function calculateAverageNodeDepth(node, depth = 0) {
+    if (!node) {
         return 0;
     }
 
     let totalDepth = depth;
+    let totalNodes = 1;
 
-    // Рекурсивно обходим все дочерние узлы и вычисляем суммарную глубину и количество узлов
     for (let i = 0; i < node.children.length; i++) {
-        totalDepth += calculateAverageNodeDepth(node.children[i], depth + 1, count + 1);
+        let childResult = calculateAverageNodeDepth(node.children[i], depth + 1);
+        totalDepth += childResult.totalDepth;
+        totalNodes += childResult.totalNodes;
     }
 
-    // Возвращаем суммарную глубину, деленную на количество узлов
-    return count === 0 ? 0 : totalDepth / count;
+    return {
+        totalDepth: totalDepth,
+        totalNodes: totalNodes
+    };
 }
 
-// Функция для вычисления частоты использования различных типов тегов в дереве DOM
-function calculateTagFrequency(node, frequencyMap = {}) {
-    if (!node) {
-        return frequencyMap;
-    }
-
-    // Если узел - элемент, увеличиваем счетчик его тега в частотной карте
-    if (node.nodeType === Node.ELEMENT_NODE) {
-        const tagName = node.tagName.toLowerCase();
-        frequencyMap[tagName] = (frequencyMap[tagName] || 0) + 1;
-    }
-
-    // Рекурсивно обходим все дочерние узлы
-    if (node.children && node.children.length > 0) {
-        for (let i = 0; i < node.children.length; i++) {
-            calculateTagFrequency(node.children[i], frequencyMap);
-        }
-    }
-
-    return frequencyMap;
+function getAverageNodeDepth(rootNode) {
+    let result = calculateAverageNodeDepth(rootNode);
+    return result.totalNodes === 0 ? 0 : result.totalDepth / result.totalNodes;
 }
+
 
 function findForms() {
     const forms = document.getElementsByTagName('form');

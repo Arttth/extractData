@@ -12,7 +12,7 @@ class NaiveBayes extends Classificator {
             }
             this.classFreq.set(sampleTarget, this.classFreq.get(sampleTarget)+1);
 
-            // подсчет частоты признаков при опредленном классе в объекте
+            // подсчет частоты признаков при определенном классе в объекте
             let feats = sample.features;
             for (let featureName in feats) {
                 const key = this._createKey(featureName, feats[featureName], sampleTarget);
@@ -27,20 +27,6 @@ class NaiveBayes extends Classificator {
     trainWithReset() {
         this.clearParams();
         this.fit();
-
-        // console.log("Feature Freq");
-        // for (let entry of this.featureFreq) {
-        //     this.featureFreq.set(entry[0], entry[1]/this.classFreq.get(JSON.parse(entry[0])[2]));
-        //     console.log("classFreq = " + this.classFreq.get(JSON.parse(entry[0])[2]));
-        //     console.log(entry[0] + " = " + entry[1]);
-        // }
-        //
-        // console.log("Class Freq");
-        // console.log("trainDatalength = " + this.dataset.trainData.length);
-        // for (let entry of this.classFreq) {
-        //     this.classFreq.set(entry[0], entry[1]/this.dataset.trainData.length);
-        //     console.log(entry[0] + " = " + entry[1]);
-        // }
     }
 
 
@@ -122,8 +108,6 @@ class NaiveBayes extends Classificator {
         console.log("trainDatalength = " + this.dataset.trainData.length);
         console.log("trainData = " + this.classFreq);
         console.log("trainData = " + this.featureFreq);
-        let ids = [];
-        let id = 0;
         for (let i = 0; i < this.dataset.testData.length; ++i) {
             if (i === 1178) {
                 console.log(this.dataset);
@@ -175,31 +159,6 @@ class NaiveBayes extends Classificator {
         });
     }
 
-    evaluateThreshold(threshold) {
-        let truePositives = 0;
-        let falsePositives = 0;
-        let trueNegatives = 0;
-        let falseNegatives = 0;
-
-        const predictions = this.predict(threshold);
-
-        for (let i = 0; i < this.dataset.testData.length; ++i) {
-            const predicted = predictions[i];
-            const actual = this.dataset.testData[i].target;
-
-            if (predicted === actual && predicted !== '-') truePositives++;
-            if (predicted !== actual && predicted !== '-') falsePositives++;
-            if (predicted === actual && predicted === '-') trueNegatives++;
-            if (predicted !== actual && predicted === '-') falseNegatives++;
-        }
-
-        const precision = truePositives / (truePositives + falsePositives);
-        const recall = truePositives / (truePositives + falseNegatives);
-        const f1 = 2 * (precision * recall) / (precision + recall);
-
-        return f1;
-    }
-
     findOptimalThreshold(classifier=this, validationData, step = 0.01) {
         let bestThreshold = 0;
         let bestF1Score = 0;
@@ -237,20 +196,6 @@ class NaiveBayes extends Classificator {
         return bestThreshold;
     }
 
-
-
-    updateThreshold(newSample) {
-        const predictedClass = this.predict(newSample);
-        const actualClass = newSample.target;
-
-        this.totalClassifications += 1;
-        if (predictedClass === actualClass) {
-            this.correctClassifications += 1;
-        }
-
-        const accuracy = this.correctClassifications / this.totalClassifications;
-        this.threshold = accuracy;
-    }
 
     getFeatureFreq() {
         return this.featureFreq;

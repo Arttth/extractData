@@ -94,7 +94,7 @@ function createViewElemWindow(shadowRoot) {
             });
 
             const endBtn = root.querySelector("#end_btn");
-            endBtn.addEventListener("click", (event) => {
+            endBtn.addEventListener("click", () => {
                 chrome.storage.local.set({[domain + "_work"]: "no"}, () => {
                     //
                 });
@@ -145,7 +145,7 @@ function createSelectPageSampleWindow(shadowRoot) {
             
 
             const endBtn = root.querySelector("#end_btn");
-            endBtn.addEventListener("click", (event) => {
+            endBtn.addEventListener("click", () => {
                 chrome.storage.local.set({[domain + "_work"]: "no"}, () => {
                     //
                 });
@@ -174,7 +174,7 @@ function createPageSampleWindow(shadowRoot) {
 
 
             const backBtn = root.querySelector("#back_pageSample");
-            backBtn.addEventListener("click", (event) => {
+            backBtn.addEventListener("click", () => {
                 createSelectPageSampleWindow(shadowRoot);
             });
         });
@@ -307,7 +307,7 @@ function createViewElemWindowUntilExtract(shadowRoot) {
             });
 
             const endBtn = root.querySelector("#end_btn");
-            endBtn.addEventListener("click", (event) => {
+            endBtn.addEventListener("click", () => {
 
             });
         });
@@ -397,7 +397,7 @@ function createPageSampleWindowUntilExtract(shadowRoot) {
 
 
             const backBtn = root.querySelector("#back_pageSample");
-            backBtn.addEventListener("click", (event) => {
+            backBtn.addEventListener("click", () => {
                 createSelectPageSampleWindow(shadowRoot);
             });
         });
@@ -453,8 +453,7 @@ function createUpdateCollectorsUntilExtract(shadowRoot, collectors) {
                 tr.append(tdType);
 
                 tr.addEventListener("click", (event) => {
-                    let elem = event.target;
-                    let row = elem;
+                    let row = event.target;
                     while (row.tagName !== "TR") {
                         row = row.parentNode;
                     }
@@ -499,16 +498,3 @@ function createUpdateCollectorsUntilExtract(shadowRoot, collectors) {
             });
         });
 }
-// TODO: может сделать класс для окна
-
-// class Modal {
-//     // TODO: maybe add drag and drop
-//     // posX = 0;
-//     // posY = 0;
-//     rootElem = {};
-//
-//     constructor(id) {
-//
-//     }
-//
-// }

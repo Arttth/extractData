@@ -43,12 +43,4 @@ class Collector {
     getClassificator() {
         return this.classificator;
     }
-
-    getOneElementSelector() {
-        return this.isSingleElemCollector;
-    }
-
-    getPredictedElems() {
-
-    }
 }

@@ -7,11 +7,7 @@ class Classificator {
         this.dataset = dataset;
     }
 
-    setTestData(testData) {
-        this.testData = testData;
-    }
-
-    // getParams() {}
+    getParams() {}
     fit() {}
     predict() {}
 }

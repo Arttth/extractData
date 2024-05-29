@@ -16,14 +16,25 @@ function saveToCSV(titles=[], data, notIncludeColumns) {
 
     // Добавляем заголовки, если они есть
     if (titles.length > 0) {
-        str += titles.map(escapeCSV).join(",") + "\n";
+        for (let i = 0; i < titles.length; ++i) {
+            if (notIncludeColumns.indexOf(i) < 0) {
+                str += escapeCSV(titles[i]) + ',';
+            }
+        }
+        str += '\n';
     }
 
-    // Обрабатываем данные
-    data.forEach(row => {
-        let rowContent = row.map(escapeCSV).join(",");
-        str += rowContent + "\n";
-    });
+
+    if (data.length > 0) {
+        for (let i = 0; i < data.length; ++i) {
+            for (let j = 0; j < data[0].length; ++j) {
+                if (notIncludeColumns.indexOf(i) < 0) {
+                    str += escapeCSV(data[i][j]) + ',';
+                }
+            }
+            str += '\n';
+        }
+    }
 
     return str;
 }

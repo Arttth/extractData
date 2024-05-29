@@ -4,7 +4,6 @@ class Selector {
         this.selectedElems = [];
         this.predictedElems = [];
         this.illegalTags = [];
-        this.illegalDataset = ['modalExtractData'];
         this.mark_train = "mark_train";
         this.possible_mark_train = "possible_mark_train";
         this.possible_del_mark_train = "possible_del_mark_train";

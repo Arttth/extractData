@@ -2,9 +2,9 @@ const extractStartButton = document.getElementById("select-data-start");
 const extractStopButton = document.getElementById("select-data-stop");
 const dataFormat = document.getElementById("dataFormat");
 
-let settingSkipUnmarked = false;
+// let settingSkipUnmarked = false;
 
-extractStartButton.addEventListener("click", (event) => {
+extractStartButton.addEventListener("click", () => {
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         console.log("send");
         chrome.tabs.sendMessage(tabs[0].id, {message: "start"})
@@ -12,7 +12,7 @@ extractStartButton.addEventListener("click", (event) => {
     });
 });
 
-extractStopButton.addEventListener("click", (event) => {
+extractStopButton.addEventListener("click", () => {
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, {message: "stop"})
         let format = dataFormat.options[dataFormat.selectedIndex].value;

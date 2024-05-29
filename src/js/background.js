@@ -7,6 +7,8 @@ chrome.runtime.onInstalled.addListener(() => {
    connectDB(console.log);
 });
 
+let isStoppedExtract = false;
+
 let extractor = {};
 let dataForDownload = [];
 let titles = ["Стартовая страница"];
@@ -61,6 +63,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
            break;
 
        case 'download':
+           isStoppedExtract  = isStoppedExtract !== true;
             if (dataForDownload.length > 0) {
                 let formattedData;
                 switch (request.format) {
@@ -90,103 +93,134 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
    return true;
 });
 
-// получить данные с бд
+
 async function extractData(extractorName, urls) {
     // проход по ссылкам
         // определение класса страницы и получение схожей страницы
         // получаем коллекторы по странице
         // собираем данные со страницы используя коллекторы
     // инициализация кучи, объекты в куче имеют вид {...: ..., priority: priority}
-   let priorityQueue = new Heap();
-   let priority = 0;
-    let urlsPrior = [];
-    urls.forEach((url) => {
-      urlsPrior.push({priority: priority, data: url, type: 'link'});
-    });
-   // переопрделение функции для сравнения(так что макс. элемент извлекается первее)
-   priorityQueue.lessThan = (a, b) => a.priority < b.priority;
-   priorityQueue.addElems(urlsPrior);
+    try {
+        let priorityQueue = new Heap();
+        let priority = 0;
+        let urlsPrior = [];
+        urls.forEach((url) => {
+            urlsPrior.push({priority: priority, data: url, type: 'link'});
+        });
+        // переопрделение функции для сравнения(так что макс. элемент извлекается первее)
+        priorityQueue.lessThan = (a, b) => a.priority < b.priority;
+        priorityQueue.addElems(urlsPrior);
 
-   // получение данных об экстракторе с бд
-   let extractor = await getExtractor(extractorName);
-   let requestsDB = [
-       await getPageSamplesByExtractor(extractorName),
-       await getCollectorsByExtractor(extractorName)
-   ];
-   let [pageSamples, collectors] = await Promise.all(requestsDB);
+        // получение данных о сборщике с бд и сущностей связанных с полученным сборщиком
+        let extractor = await getExtractor(extractorName);
+        let [pageSamples, collectors] = await getDataByExtractor(extractor);
 
-   // создание вкладки
-   if (urls[0] === undefined) {
-       console.error("arr 'urls' is empty");
-   }
-   let tab = await createTab(urls[0]);
+        // создание вкладки
+        if (urls[0] === undefined) {
+            console.error("arr 'urls' is empty");
+        }
+        let tab = await createTab(urls[0]);
 
-   // проход по очереди с приоритетом
-   let currentData = [];
-   let lastPrior = 0;
-   let rowCount = 0;
-   while (!priorityQueue.isEmpty()) {
-       let current = priorityQueue.pop();
+        // проход по очереди с приоритетом
+        let currentData = [];
+        let lastPrior = 0;
+        let rowCount = 0;
+        while (!priorityQueue.isEmpty() && !isStoppedExtract) {
+            let current = priorityQueue.pop();
 
-       if (current.type === 'link') {
-           await goToUrl(tab, current.data);
-           let response = await chrome.tabs.sendMessage(tab.id, {message: "extractData", pageSamples: pageSamples, collectors: collectors});
-           console.log(response.message);
-           console.log(response.useData);
-           priority = current.priority;
-           if (response.message === "ok") {
-               for (let i = 0; i < response.useData.length; ++i) {
-                   let priorityElems = [];
-                   priority++;
-                   response.useData[i].data.forEach((elem) => {
-                       priorityElems.push({priority: priority, data: elem, type: response.useData[i].type});
-                   });
-                   priorityQueue.addElems(priorityElems);
-                   if (titles.indexOf(response.useData[i].name) < 0) {
-                       titles.push(response.useData[i].name);
-                   }
-               }
-           } else if (response.message === "update") {
-               setCollector(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
-               setPageSample(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
-               collectors.push(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
-               pageSamples.push(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
-           } else if (response.message === "singleElemCollectorUpdate") {
-               for (let i = 0; i < response.useData.length; ++i) {
-                   let priorityElems = [];
-                   priority++;
-                   response.useData[i].data.forEach((elem) => {
-                       priorityElems.push({priority: priority, data: elem, type: response.useData[i].type});
-                   });
-                   priorityQueue.addElems(priorityElems);
-               }
-               response.collectors.forEach(collector => {
-                  putCollector(Object.assign(collector, {'extractorName': extractor.extractorName}));
-                   for (let i = 0; i < collectors.length; ++i) {
-                       if (collectors[i].collectorName === collector.collectorName &&
-                           collectors[i].pageSampleName === collector.pageSampleName) {
-                           collectors[i] = collector;
-                       }
-                   }
-               });
-           } else if (response.message === "continue") {
-               continue;
-           } else {
-               console.log(response.message);
-           }
-       }
+            if (current.type === 'link' || current.type === 'pagination_link') {
+                await goToUrl(tab, current.data);
+                let response = await chrome.tabs.sendMessage(tab.id, {
+                    message: "extractData",
+                    pageSamples: pageSamples,
+                    collectors: collectors
+                });
+                console.log(response.message);
+                console.log(response.useData);
+                priority = current.priority;
+                if (response.message === "ok") {
+                    let priorityElems = [];
+                    let basePriority = ++priority;
 
-       if (lastPrior !== 0 && current.priority === 1) {
-           dataForDownload[rowCount] = Array.from(currentData);
-           currentData.length = 0;
-           rowCount++;
-       }
-       console.log(current);
-       currentData[current.priority] = current.data;
-       lastPrior = current.priority;
-       console.log(priorityQueue);
+                    for (let i = 0; i < response.useData.length; ++i) {
+                        let item = response.useData[i];
+                        let currentPriority = item.type === 'pagination_link' ? basePriority : ++priority;
 
-   }
+                        item.data.forEach((elem) => {
+                            priorityElems.push({priority: currentPriority, data: elem, type: item.type});
+                        });
+
+                        if (!titles.includes(item.name)) {
+                            titles.push(item.name);
+                        }
+                    }
+
+                    priorityQueue.addElems(priorityElems);
+                } else if (response.message === "update") {
+                    setCollector(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
+                    setPageSample(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
+                    collectors.push(Object.assign(response.collector, {'extractorName': extractor.extractorName}));
+                    pageSamples.push(Object.assign(response.pageSample, {'extractorName': extractor.extractorName}));
+                } else if (response.message === "singleElemCollectorUpdate") {
+                    let priorityElems = [];
+                    let basePriority = ++priority;
+
+                    for (let i = 0; i < response.useData.length; ++i) {
+                        let item = response.useData[i];
+                        let currentPriority = item.type === 'pagination_link' ? basePriority : ++priority;
+
+                        item.data.forEach((elem) => {
+                            priorityElems.push({priority: currentPriority, data: elem, type: item.type});
+                        });
+
+                        if (!titles.includes(item.name)) {
+                            titles.push(item.name);
+                        }
+                    }
+                    priorityQueue.addElems(priorityElems);
+                    response.collectors.forEach(collector => {
+                        putCollector(Object.assign(collector, {'extractorName': extractor.extractorName}));
+                        for (let i = 0; i < collectors.length; ++i) {
+                            if (collectors[i].collectorName === collector.collectorName &&
+                                collectors[i].pageSampleName === collector.pageSampleName) {
+                                collectors[i] = collector;
+                            }
+                        }
+                    });
+                } else if (response.message === "continue") {
+                    continue;
+                } else {
+                    console.log(response.message);
+                }
+            }
+
+            if (lastPrior !== 0 && current.priority === 2) {
+                dataForDownload.push([...currentData]);
+                currentData.length = 0;
+                rowCount++;
+            }
+            console.log(current);
+            currentData[current.priority] = current.data;
+            lastPrior = current.priority;
+            console.log(priorityQueue);
+        }
+    } catch (err) {
+        console.error("Error: {extractData}", err);
+    }
+}
+
+async function getDataByExtractor(extractor) {
+    let extractorName = extractor.extractorName;
+    try {
+        let requestsDB = [
+            await getPageSamplesByExtractor(extractorName),
+            await getCollectorsByExtractor(extractorName)
+        ];
+        return await Promise.all(requestsDB);
+    } catch (err) {
+        console.error("Error getting data by extractor:", err);
+        throw err; // Повторное выбрасывание ошибки для обработки на верхнем уровне
+    }
 }
 
 function endExtractNotification() {
@@ -210,12 +244,6 @@ function goToUrl(tab, url) {
     })
 }
 
-async function sendMessageToActiveTab(message) {
-    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    console.log(tab);
-    console.log(tab.id);
-    return await chrome.tabs.sendMessage(tab.id, message);
-}
 
 async function createTab(url) {
    const tabLoadingTrap = { tabId: undefined, resolve: undefined };

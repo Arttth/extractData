@@ -43,14 +43,4 @@ class Dataset {
             this.addTargetIfNotAdded(trainSample.target);
         }
     }
-
-    addTestSample(testSample) {
-        if (testSample) {
-            this.testData.push(testSample);
-        }
-    }
-
-    getTrainDatasetSize() {
-        return this.trainData.size;
-    }
 }
